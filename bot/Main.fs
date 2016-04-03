@@ -60,8 +60,8 @@ let parseFile inFile =
   let lexbuf = Lexer.create inFile pi in
   let result =
     try Parser.toplevel Lexer.main lexbuf
-    with | Parsing.Parse_error -> error (Lexer.info lexbuf) "Parse error"
-  in (Parsing.clear_parser (); close_in pi; result)
+    with | Parsing.RecoverableParseError -> error (Lexer.info lexbuf) "Parse error"
+  in ((*Parsing.clear_parser ();*) close_in pi; result)
   
 let alreadyImported = ref ([] : string list)
   

@@ -13,7 +13,7 @@ See LICENSE.TXT for licensing details.
  */
 
 %{
-open FSharp.Compatibility.OCaml
+//open FSharp.Compatibility.OCaml
 open Ast
 %}
 
