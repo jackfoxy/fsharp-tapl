@@ -23,11 +23,11 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <Tailcalls>false</Tailcalls>
-    <OutputPath>..\bin\Debug\</OutputPath>
+    <OutputPath>..\..\bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
     <PlatformTarget>x86</PlatformTarget>
-    <DocumentationFile>..\bin\Debug\purefsub.XML</DocumentationFile>
+    <DocumentationFile>..\..\bin\Debug\purefsub.XML</DocumentationFile>
     <NoWarn>62</NoWarn>
     <StartArguments>"..\..\test.f"</StartArguments>
   </PropertyGroup>
@@ -35,11 +35,11 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <Tailcalls>true</Tailcalls>
-    <OutputPath>..\bin\Release\</OutputPath>
+    <OutputPath>..\..\bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
     <PlatformTarget>x86</PlatformTarget>
-    <DocumentationFile>..\bin\Release\purefsub.XML</DocumentationFile>
+    <DocumentationFile>..\..\bin\Release\purefsub.XML</DocumentationFile>
   </PropertyGroup>
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '11.0'">
@@ -54,21 +54,12 @@
     </Otherwise>
   </Choose>
   <Import Project="$(FSharpTargetsPath)" Condition="Exists('$(FSharpTargetsPath)')" />
-  <Import Project="..\..\..\FsLexYacc\bin\Debug\FsLexYacc.targets" />
-  <PropertyGroup>
-    <FsLexOutputFolder>$(IntermediateOutputPath)</FsLexOutputFolder>
-    <FsYaccOutputFolder>$(IntermediateOutputPath)</FsYaccOutputFolder>
-  </PropertyGroup>
+  <Import Project="..\..\lib\FsLexYacc\FsLexYacc.targets" />
   <ItemGroup>
     <Compile Include="Ast.fs" />
-    <Compile Include="$(IntermediateOutputPath)\Parser.fs">
-      <Visible>false</Visible>
-      <Link>Parser.fs</Link>
-    </Compile>
-    <Compile Include="$(IntermediateOutputPath)\Lexer.fs">
-      <Visible>false</Visible>
-      <Link>Lexer.fs</Link>
-    </Compile>
+    <None Include="Parser.fsi" />
+    <Compile Include="Parser.fs" />
+    <Compile Include="Lexer.fs" />
     <FsYacc Include="Parser.fsy">
       <OtherFlags>--module Parser</OtherFlags>
     </FsYacc>
@@ -84,11 +75,16 @@
     <None Include="paket.references" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\TaplCommon\TaplCommon.fsproj">
+      <Name>TaplCommon</Name>
+      <Project>{3f36d86f-6b84-4cef-9e64-694a16c29c89}</Project>
+      <Private>True</Private>
+    </ProjectReference>
     <Reference Include="FSharp.Core, Version=$(TargetFSharpCoreVersion), Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
       <Private>True</Private>
     </Reference>
     <Reference Include="FsLexYacc.Runtime">
-      <HintPath>..\..\..\FsLexYacc\bin\Debug\FsLexYacc.Runtime.dll</HintPath>
+      <HintPath>..\..\lib\FsLexYacc\FsLexYacc.Runtime.dll</HintPath>
     </Reference>
     <Reference Include="mscorlib" />
     <Reference Include="System" />
@@ -99,13 +95,6 @@
       <Private>True</Private>
     </ProjectReference>
   </ItemGroup>
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-	     Other similar extension points exist, see Microsoft.Common.targets.
-	<Target Name="BeforeBuild">
-	</Target>
-	<Target Name="AfterBuild">
-	</Target>
-	-->
   <Choose>
     <When Condition="$(TargetFrameworkIdentifier) == '.NETFramework' And ($(TargetFrameworkVersion) == 'v4.0' Or $(TargetFrameworkVersion) == 'v4.5' Or $(TargetFrameworkVersion) == 'v4.5.1' Or $(TargetFrameworkVersion) == 'v4.5.2' Or $(TargetFrameworkVersion) == 'v4.5.3' Or $(TargetFrameworkVersion) == 'v4.6' Or $(TargetFrameworkVersion) == 'v4.6.1')">
       <ItemGroup>

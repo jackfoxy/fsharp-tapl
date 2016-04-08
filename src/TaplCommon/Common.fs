@@ -1,8 +1,6 @@
 ﻿namespace TaplCommon
 
-open Microsoft.FSharp.Text
 open FSharp.Compatibility.OCaml
-open FSharp.Compatibility.OCaml.Format
 open Core
 
 module Common =
@@ -16,12 +14,12 @@ module Common =
 
     let parseArgs () =
         let inFile : string option ref = ref None
-        Arg.parse argDefs
-         (fun s ->
-           match !inFile with
-           | Some _ -> err "You must specify exactly one input file"
-           | None -> inFile := Some s)
-         ""
+        Arg.parse argDefs 
+             (fun s ->
+                match !inFile with
+                | Some _ -> err "You must specify exactly one input file"
+                | None -> inFile := Some s)
+            ""
         match !inFile with
         | Some s -> s
         | None ->

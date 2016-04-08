@@ -1,3 +1,7 @@
+src/*/Lexer.fs
+src/*/Parser.fs
+src/*/Parser.fsi
+
 #OS junk files
 [Tt]humbs.db
 *.DS_Store
