@@ -1,6 +1,11 @@
 # Auto detect text files
 * text=auto
 
+*.f eol=lf
+*.config eol=lf
+*.fsl eol=lf
+*.fsy eol=lf
+
 # Custom for Visual Studio
 *.cs diff=csharp text=auto eol=lf
 *.vb diff=csharp text=auto eol=lf

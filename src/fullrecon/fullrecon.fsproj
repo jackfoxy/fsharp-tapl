@@ -57,7 +57,7 @@
   <Import Project="..\..\lib\FsLexYacc\FsLexYacc.targets" />
   <ItemGroup>
     <Compile Include="Ast.fs" />
-    <Compile Include="Parser.fsi" />
+    <None Include="Parser.fsi" />
     <Compile Include="Parser.fs" />
     <Compile Include="Lexer.fs" />
     <FsYacc Include="Parser.fsy">
