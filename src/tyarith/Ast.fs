@@ -96,7 +96,7 @@ and printtm_ATerm outer t =
   | TmSucc (_, t1) ->
       let rec f n t =
         (match t with
-         | TmZero _ -> pr (string_of_int n)
+         | TmZero _ -> pr (string n)
          | TmSucc (_, s) -> f (n + 1) s
          | _ -> (pr "(succ "; printtm_ATerm false t1; pr ")"))
       in f 1 t1

@@ -77,7 +77,7 @@ and uvargenerator = unit -> nextuvar
 
 let uvargen =
     let rec f n () =
-        NextUVar ("?X" ^ (string_of_int n), f (n + 1))    
+        NextUVar ("?X" ^ (string n), f (n + 1))    
     f 0
   
 let rec recon ctx nextuvar t =
@@ -127,7 +127,7 @@ let substinty tyX tyT tyS =
   in f tyS
   
 let applysubst constr tyT =
-  List.fold_left
+  List.fold
     (fun tyS -> function | (TyId tyX, tyC2) -> substinty tyX tyC2 tyS) tyT
     (List.rev constr)
   

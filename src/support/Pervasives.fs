@@ -15,6 +15,16 @@ open FSharp.Compatibility.OCaml
 
 type info = Error.info
 
+let mutable buffer = ""
+
 let pr = Format.print_string
 
-
+//    fun (s : string) ->
+//        match buffer.Length, (s.Substring(0)) with
+//        | 0, _ ->
+//            buffer <- s
+//        | _, " " -> 
+//        if buffer.Length > 0 then
+//            if buffer.EndsWith ()
+//
+//    printf "%s"

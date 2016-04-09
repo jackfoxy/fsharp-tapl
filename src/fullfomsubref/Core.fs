@@ -574,7 +574,7 @@ let rec typeof ctx t =
                    let ctx' = addbinding ctx xi (VarBind tyTi)
                    in typeShift (-1) (typeof ctx' ti))
                 cases
-            in List.fold_left (join ctx) TyBot casetypes)
+            in List.fold (join ctx) TyBot casetypes)
        | TyBot -> TyBot
        | _ -> error fi "Expected variant type")
   | TmTag (fi, li, ti, tyT) ->

@@ -10,7 +10,6 @@ See LICENSE.TXT for licensing details.
 /// Syntax trees and associated support functions.
 module Ast
 
-open FSharp.Compatibility.OCaml
 open FSharp.Compatibility.OCaml.Format
 
 (* ---------------------------------------------------------------------- *)
@@ -258,11 +257,11 @@ and printty_AType outer ctx tyT =
       else
         pr
           ("[bad index: " ^
-             ((string_of_int x) ^
+             ((string x) ^
                 ("/" ^
-                   ((string_of_int n) ^
+                   ((string n) ^
                       (" in {" ^
-                         ((List.fold_left (fun s (x, _) -> s ^ (" " ^ x)) ""
+                         ((List.fold (fun s (x, _) -> s ^ (" " ^ x)) ""
                              ctx)
                             ^ " }]"))))))
   | tyT -> (pr "("; printty_Type outer ctx tyT; pr ")")
@@ -320,11 +319,11 @@ and printtm_ATerm outer ctx t =
       else
         pr
           ("[bad index: " ^
-             ((string_of_int x) ^
+             ((string x) ^
                 ("/" ^
-                   ((string_of_int n) ^
+                   ((string n) ^
                       (" in {" ^
-                         ((List.fold_left (fun s (x, _) -> s ^ (" " ^ x)) ""
+                         ((List.fold (fun s (x, _) -> s ^ (" " ^ x)) ""
                              ctx)
                             ^ " }]"))))))
   | t -> (pr "("; printtm_Term outer ctx t; pr ")")

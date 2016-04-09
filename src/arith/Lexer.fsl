@@ -20,7 +20,6 @@ module Lexer
 open System
 open Parser
 open Microsoft.FSharp.Text.Lexing
-open FSharp.Compatibility.OCaml
 
 let lexeme lexbuf =
     LexBuffer<char>.LexemeString lexbuf
@@ -100,16 +99,6 @@ and start = ref 0
 and filename = ref ""
 and startLex = ref dummyinfo
 
-let create inFile stream =
-    filename :=
-        if not (Filename.is_implicit inFile) then
-            inFile
-        else
-            Filename.concat (Sys.getcwd ()) inFile
-    lineno := 1
-    start := 0
-    LexBuffer<char>.FromTextReader stream
-
 let newline (lexbuf : LexBuffer<char>) =
     incr lineno
     start := lexbuf.StartPos.pos_cnum   // Lexing.lexeme_start lexbuf
@@ -129,8 +118,8 @@ let addStr (ch : char) =
 let getStr () =
     stringBuffer.ToString ()
 
-let extractLineno yytext offset =
-    Int32.Parse (String.sub yytext offset (String.length yytext - offset))
+let extractLineno (yytext : string) offset =
+    Int32.Parse (yytext.Substring(offset, (String.length yytext - offset)))
 }
 
 (* The main body of the lexical analyzer *)
@@ -151,10 +140,10 @@ rule main = parse
     { lineno := extractLineno (lexeme lexbuf) 7 - 1; getFile lexbuf }
 
 | ['0'-'9']+
-    { Parser.INTV{i=info lexbuf; v=int_of_string (lexeme lexbuf)} }
+    { Parser.INTV{i=info lexbuf; v= int (lexeme lexbuf)} }
 
 | ['0'-'9']+ '.' ['0'-'9']+
-    { Parser.FLOATV{i=info lexbuf; v=float_of_string (lexeme lexbuf)} }
+    { Parser.FLOATV{i=info lexbuf; v= float (lexeme lexbuf)} }
 
 | ['A'-'Z' 'a'-'z' '_']
   ['A'-'Z' 'a'-'z' '_' '0'-'9' '\'']*
@@ -179,9 +168,9 @@ rule main = parse
 
 and comment = parse
 | "/*"
-    { depth := succ !depth; comment lexbuf }
+    { depth := !depth + 1; comment lexbuf }
 | "*/"
-    { depth := pred !depth; if !depth > 0 then comment lexbuf }
+    { depth := !depth - 1; if !depth > 0 then comment lexbuf }
 | eof
     { error (!startLex) "Comment not terminated" }
 | [^ '\n']
@@ -217,7 +206,7 @@ and escaped = parse
       if x > 255 then
           error (info lexbuf) "Illegal character constant"
       else
-          Char.chr x
+          char x
     }
 | [^ '"' '\\' 't' 'n' '\'']
     { error (info lexbuf) "Illegal character constant" }

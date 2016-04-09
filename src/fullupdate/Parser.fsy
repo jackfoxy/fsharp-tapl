@@ -12,7 +12,6 @@ See LICENSE.TXT for licensing details.
  */
 
 %{
-open FSharp.Compatibility.OCaml
 open Ast
 
 // HACK : This works around a bug in the current version of FsYacc
@@ -176,7 +175,7 @@ PathTerm :
           TmProj($2, $1 ctx, $3.v) }
   | PathTerm DOT INTV
       { fun ctx ->
-          TmProj($2, $1 ctx, string_of_int $3.v) }
+          TmProj($2, $1 ctx, string $3.v) }
   | AscribeTerm
       { $1 }
 
@@ -425,13 +424,13 @@ Field :
     Variance LCID EQ Term
       { fun ctx i -> ($2.v, ($1, $4 ctx)) }
   | Variance Term
-      { fun ctx i -> (string_of_int i, ($1, $2 ctx)) }
+      { fun ctx i -> (string i, ($1, $2 ctx)) }
 
 FieldType :
     Variance LCID COLON Type
       { fun ctx i -> ($2.v, ($1, $4 ctx)) }
   | Variance Type
-      { fun ctx i -> (string_of_int i, ($1, $2 ctx)) }
+      { fun ctx i -> (string i, ($1, $2 ctx)) }
 
 
 /*   */

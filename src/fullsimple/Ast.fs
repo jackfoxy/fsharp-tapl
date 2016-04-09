@@ -10,7 +10,6 @@ See LICENSE.TXT for licensing details.
 /// Syntax trees and associated support functions.
 module Ast
 
-open FSharp.Compatibility.OCaml
 open FSharp.Compatibility.OCaml.Format
 
 (* ---------------------------------------------------------------------- *)
@@ -283,18 +282,18 @@ and printty_AType outer ctx tyT =
       else
         pr
           ("[bad index: " ^
-             ((string_of_int x) ^
+             ((string x) ^
                 ("/" ^
-                   ((string_of_int n) ^
+                   ((string n) ^
                       (" in {" ^
-                         ((List.fold_left (fun s (x, _) -> s ^ (" " ^ x)) ""
+                         ((List.fold (fun s (x, _) -> s ^ (" " ^ x)) ""
                              ctx)
                             ^ " }]"))))))
   | TyId b -> pr b
   | TyBool -> pr "Bool"
   | TyVariant fields ->
       let pf i (li, tyTi) =
-        (if li <> (string_of_int i) then (pr li; pr ":") else ();
+        (if li <> (string i) then (pr li; pr ":") else ();
          printty_Type false ctx tyTi) in
       let rec p i l =
         (match l with
@@ -310,7 +309,7 @@ and printty_AType outer ctx tyT =
   | TyUnit -> pr "Unit"
   | TyRecord fields ->
       let pf i (li, tyTi) =
-        (if li <> (string_of_int i) then (pr li; pr ":") else ();
+        (if li <> (string i) then (pr li; pr ":") else ();
          printty_Type false ctx tyTi) in
       let rec p i l =
         (match l with
@@ -440,18 +439,18 @@ and printtm_ATerm outer ctx t =
       else
         pr
           ("[bad index: " ^
-             ((string_of_int x) ^
+             ((string x) ^
                 ("/" ^
-                   ((string_of_int n) ^
+                   ((string n) ^
                       (" in {" ^
-                         ((List.fold_left (fun s (x, _) -> s ^ (" " ^ x)) ""
+                         ((List.fold (fun s (x, _) -> s ^ (" " ^ x)) ""
                              ctx)
                             ^ " }]"))))))
   | TmString (_, s) -> pr ("\"" ^ (s ^ "\""))
   | TmUnit _ -> pr "unit"
   | TmRecord (fi, fields) ->
       let pf i (li, ti) =
-        (if li <> (string_of_int i) then (pr li; pr "=") else ();
+        (if li <> (string i) then (pr li; pr "=") else ();
          printtm_Term false ctx ti) in
       let rec p i l =
         (match l with
@@ -463,12 +462,12 @@ and printtm_ATerm outer ctx t =
               if outer then print_space () else ``break`` ();
               p (i + 1) rest))
       in (pr "{"; open_hovbox 0; p 1 fields; pr "}"; cbox ())
-  | TmFloat (_, s) -> pr (string_of_float s)
+  | TmFloat (_, s) -> pr (string s)
   | TmZero fi -> pr "0"
   | TmSucc (_, t1) ->
       let rec f n t =
         (match t with
-         | TmZero _ -> pr (string_of_int n)
+         | TmZero _ -> pr (string n)
          | TmSucc (_, s) -> f (n + 1) s
          | _ -> (pr "(succ "; printtm_ATerm false ctx t1; pr ")"))
       in f 1 t1

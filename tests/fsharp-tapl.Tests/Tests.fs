@@ -22,7 +22,7 @@ module Tests =
             |> Seq.filter (fun t -> t |> (isNull >> not))
             |> List.ofSeq
 
-        Assert.AreEqual(output, expected)
+        Assert.AreEqual(expected, output)
 
     [<Test>]
     let ``arith`` () =

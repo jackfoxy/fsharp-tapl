@@ -10,9 +10,7 @@ See LICENSE.TXT for licensing details.
 /// Syntax trees and associated support functions.
 module Ast
 
-open FSharp.Compatibility.OCaml
 open FSharp.Compatibility.OCaml.Format
-
 
 (* ---------------------------------------------------------------------- *)
 (* Datatypes *)
@@ -103,7 +101,7 @@ and printtm_ATerm outer t =
         let rec f n t =
             match t with
             | TmZero _ ->
-                pr (string_of_int n)
+                pr (string n)
             | TmSucc (_, s) ->
                 f (n + 1) s
             | _ ->

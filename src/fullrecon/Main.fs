@@ -17,19 +17,22 @@ See LICENSE.TXT for licensing details.
 module Main
 
 open Microsoft.FSharp.Text
+open Microsoft.FSharp.Text.Lexing
 open FSharp.Compatibility.OCaml
 open FSharp.Compatibility.OCaml.Format
 open Ast
 open Core
 open TaplCommon
   
-let parseFile inFile =
-  let pi = Common.openfile inFile in
-  let lexbuf = Lexer.create inFile pi in
-  let result =
+let parseFile (inFile : string) =
+    use textReader = new System.IO.StreamReader(inFile)
+    let lexbuf = LexBuffer<char>.FromTextReader textReader
+    Lexer.filename := inFile
+    Lexer.lineno := 1
+
     try Parser.toplevel Lexer.main lexbuf
-    with | Parsing.RecoverableParseError -> error (Lexer.info lexbuf) "Parse error"
-  in ((*Parsing.clear_parser ();*) close_in pi; result)
+    with Parsing.RecoverableParseError ->
+        error (Lexer.info lexbuf) "Parse error"
     
 let prbindingty ctx b =
   match b with | NameBind -> () | VarBind tyT -> (pr ": "; printty tyT)
@@ -63,7 +66,7 @@ let process_file f (ctx, nextuvar, constr) =
      (open_hvbox 0;
       let results = process_command (ctx, nextuvar, constr) c
       in (print_flush (); results))
-   in List.fold_left g (ctx, nextuvar, constr) cmds)
+   in List.fold g (ctx, nextuvar, constr) cmds)
   
 let main () =
   let inFile = Common.parseArgs () in

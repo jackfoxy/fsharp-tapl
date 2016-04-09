@@ -10,7 +10,6 @@ See LICENSE.TXT for licensing details.
 /// Syntax trees and associated support functions.
 module Ast
 
-open FSharp.Compatibility.OCaml
 open FSharp.Compatibility.OCaml.Format
 
 (* ---------------------------------------------------------------------- *)
@@ -158,7 +157,7 @@ and printty_AType outer tyT =
   match tyT with
   | TyRecord fields ->
       let pf i (li, tyTi) =
-        (if li <> (string_of_int i) then (pr li; pr ":") else ();
+        (if li <> (string i) then (pr li; pr ":") else ();
          printty_Type false tyTi) in
       let rec p i l =
         (match l with
@@ -212,16 +211,16 @@ and printtm_ATerm outer ctx t =
       else
         pr
           ("[bad index: " ^
-             ((string_of_int x) ^
+             ((string x) ^
                 ("/" ^
-                   ((string_of_int n) ^
+                   ((string n) ^
                       (" in {" ^
-                         ((List.fold_left (fun s (x, _) -> s ^ (" " ^ x)) ""
+                         ((List.fold (fun s (x, _) -> s ^ (" " ^ x)) ""
                              ctx)
                             ^ " }]"))))))
   | TmRecord (fi, fields) ->
       let pf i (li, ti) =
-        (if li <> (string_of_int i) then (pr li; pr "=") else ();
+        (if li <> (string i) then (pr li; pr "=") else ();
          printtm_Term false ctx ti) in
       let rec p i l =
         (match l with

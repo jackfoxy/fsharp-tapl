@@ -12,7 +12,6 @@ See LICENSE.TXT for licensing details.
  */
 
 %{
-open FSharp.Compatibility.OCaml
 open Ast
 
 // HACK : This works around a bug in the current version of FsYacc
@@ -363,7 +362,7 @@ PathTerm :
           TmProj($2, $1 ctx, $3.v) }
   | PathTerm DOT INTV
       { fun ctx ->
-          TmProj($2, $1 ctx, string_of_int $3.v) }
+          TmProj($2, $1 ctx, string $3.v) }
   | AscribeTerm
       { $1 }
 
@@ -383,7 +382,7 @@ FieldType :
     LCID COLON Type
       { fun ctx i -> ($1.v, $3 ctx) }
   | Type
-      { fun ctx i -> (string_of_int i, $1 ctx) }
+      { fun ctx i -> (string i, $1 ctx) }
 
 AscribeTerm :
     ATerm AS Type
@@ -452,7 +451,7 @@ Field :
     LCID EQ Term
       { fun ctx i -> ($1.v, $3 ctx) }
   | Term
-      { fun ctx i -> (string_of_int i, $1 ctx) }
+      { fun ctx i -> (string i, $1 ctx) }
 
 Cases :
     Case
