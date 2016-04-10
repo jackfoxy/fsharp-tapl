@@ -40,7 +40,7 @@ let rec isval ctx t =
   
 exception ErrorEncountered
   
-type store = term list
+type store = Term list
 
 let emptystore = []
   

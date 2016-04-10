@@ -17,12 +17,12 @@ open FSharp.Compatibility.OCaml.Format
 exception Exit of int
 
 //
-type info =
+type Info =
     | FI of string * int * int
     | UNKNOWN
     
 //
-type withinfo<'a> = {i : info; v : 'a}
+type withinfo<'a> = {i : Info; v : 'a}
 
 let dummyinfo = UNKNOWN
 let createInfo f l c = FI (f, l, c)

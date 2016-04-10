@@ -38,7 +38,7 @@ let rec processCommand cmd =
     | Eval (_, t) ->
         let tyT = typeof t
         let t' = eval t
-        printtm_ATerm true t'
+        printtmATerm true t'
         print_break 1 2
         pr ": "
         printty tyT

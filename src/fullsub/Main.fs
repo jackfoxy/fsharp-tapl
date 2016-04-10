@@ -65,7 +65,7 @@ let rec processCommand ctx cmd =
     | Eval (_, t) ->
         let tyT = typeof ctx t 
         let t' = eval ctx t
-        printtm_ATerm true ctx t'
+        printtmATerm true ctx t'
         print_break 1 2
         pr ": "
         printty ctx tyT

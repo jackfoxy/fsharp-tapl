@@ -14,16 +14,16 @@ open FSharp.Compatibility.OCaml.Format
 
 (* ---------------------------------------------------------------------- *)
 (* Datatypes *)
-type term =
-  | TmVar of info * int * int
-  | TmAbs of info * string * term
-  | TmApp of info * term * term
+type Term =
+  | TmVar of Info * int * int
+  | TmAbs of Info * string * Term
+  | TmApp of Info * Term * Term
 
-type binding = | NameBind
+type Binding = | NameBind
 
-type context = (string * binding) list
+type Context = (string * Binding) list
 
-type command = | Eval of info * term | Bind of info * string * binding
+type Command = | Eval of Info * Term | Bind of Info * string * Binding
 
 (* ---------------------------------------------------------------------- *)
 (* Context management *)
@@ -122,11 +122,11 @@ let obox () = open_hvbox 2
 let cbox () = close_box()
 let ``break`` () = print_break 0 0
   
-let small t = match t with | TmVar (_, _, _) -> true | _ -> false
+let small t = match t with | TmVar (_) -> true | _ -> false
   
-let rec printtm_Term outer ctx t =
+let rec printtmTerm outer ctx t =
   match t with
-  | TmAbs (fi, x, t2) ->
+  | TmAbs (_, x, t2) ->
       let (ctx', x') = pickfreshname ctx x
       in
         (obox ();
@@ -134,19 +134,19 @@ let rec printtm_Term outer ctx t =
          pr x';
          pr ".";
          if (small t2) && (not outer) then ``break`` () else print_space ();
-         printtm_Term outer ctx' t2;
+         printtmTerm outer ctx' t2;
          cbox ())
-  | t -> printtm_AppTerm outer ctx t
-and printtm_AppTerm outer ctx t =
+  | t -> printtmAppTerm outer ctx t
+and printtmAppTerm outer ctx t =
   match t with
-  | TmApp (fi, t1, t2) ->
+  | TmApp (_, t1, t2) ->
       (obox0 ();
-       printtm_AppTerm false ctx t1;
+       printtmAppTerm false ctx t1;
        print_space ();
-       printtm_ATerm false ctx t2;
+       printtmATerm false ctx t2;
        cbox ())
-  | t -> printtm_ATerm outer ctx t
-and printtm_ATerm outer ctx t =
+  | t -> printtmATerm outer ctx t
+and printtmATerm outer ctx t =
   match t with
   | TmVar (fi, x, n) ->
       if (ctxlength ctx) = n
@@ -161,10 +161,10 @@ and printtm_ATerm outer ctx t =
                          ((List.fold (fun s (x, _) -> s ^ (" " ^ x)) ""
                              ctx)
                             ^ " }]"))))))
-  | t -> (pr "("; printtm_Term outer ctx t; pr ")")
+  | t -> (pr "("; printtmTerm outer ctx t; pr ")")
   
-let printtm ctx t = printtm_Term true ctx t
+let printtm ctx t = printtmTerm true ctx t
   
-let prbinding ctx b = match b with | NameBind -> ()
+let prbinding _ b = match b with | NameBind -> ()
   
 

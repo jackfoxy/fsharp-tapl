@@ -29,7 +29,7 @@ let rec isval ctx t =
   | TmFloat _ -> true
   | TmString _ -> true
   | t when isnumericval ctx t -> true
-  | TmAbs (_, _, _) -> true
+  | TmAbs (_) -> true
   | TmRecord (_, fields) -> List.for_all (fun (l, ti) -> isval ctx ti) fields
   | _ -> false
   

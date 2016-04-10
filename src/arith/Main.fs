@@ -37,7 +37,7 @@ let rec processCommand cmd =
     match cmd with
     | Eval (_, t) ->
         let t' = eval t
-        printtm_ATerm true t'
+        printtmATerm true t'
         force_newline ()
   
 let processFile f =

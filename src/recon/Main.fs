@@ -47,7 +47,7 @@ let rec processCommand (ctx, nextuvar, constr) cmd =
         let t' = eval ctx t
         let constr' = combineconstr constr constr_t
         let constr'' = unify fi ctx "Could not simplify constraints" constr'
-        printtm_ATerm true ctx t'
+        printtmATerm true ctx t'
         print_break 1 2
         pr ": "
         open_hovbox 0

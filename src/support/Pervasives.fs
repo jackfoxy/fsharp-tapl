@@ -13,7 +13,7 @@ module Support.Pervasives
 open FSharp.Compatibility.OCaml
 
 
-type info = Error.info
+type Info = Error.Info
 
 let mutable buffer = ""
 

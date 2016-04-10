@@ -54,7 +54,7 @@ let rec eval ctx t =
   try let t' = eval1 ctx t in eval ctx t' with | NoRuleApplies -> t
   
 (* ------------------------   TYPING  ------------------------ *)
-type constr = (ty * ty) list
+type constr = (Ty * Ty) list
 
 let emptyconstr = []
   
@@ -62,7 +62,7 @@ let combineconstr = List.append
   
 let prconstr constr =
   let pc (tyS, tyT) =
-    (printty_Type false tyS; pr "="; printty_Type false tyT) in
+    (printtyType false tyS; pr "="; printtyType false tyT) in
   let rec f l =
     match l with
     | [] -> ()

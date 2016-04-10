@@ -33,7 +33,7 @@ let rec isval ctx t =
   | TmAbs (_, _, _, _) -> true
   | TmRecord (_, fields) -> List.for_all (fun (l, ti) -> isval ctx ti) fields
   | TmPack (_, _, v1, _) when isval ctx v1 -> true
-  | TmTAbs (_, _, _) -> true
+  | TmTAbs (_) -> true
   | _ -> false
   
 let rec eval1 ctx t =

@@ -14,7 +14,7 @@ open FSharp.Compatibility.OCaml
 open Ast
 
 (* ------------------------   EVALUATION  ------------------------ *)
-let rec isval ctx t = match t with | TmAbs (_, _, _) -> true | _ -> false
+let rec isval ctx t = match t with | TmAbs (_) -> true | _ -> false
   
 exception NoRuleApplies
   

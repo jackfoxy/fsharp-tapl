@@ -14,24 +14,24 @@ open FSharp.Compatibility.OCaml.Format
 
 (* ---------------------------------------------------------------------- *)
 (* Datatypes *)
-type ty =
-  | TyTop | TyArr of ty * ty | TyRecord of (string * ty) list | TyBool
+type Ty =
+  | TyTop | TyArr of Ty * Ty | TyRecord of (string * Ty) list | TyBool
 
-type term =
-  | TmVar of info * int * int
-  | TmAbs of info * string * ty * term
-  | TmApp of info * term * term
-  | TmRecord of info * (string * term) list
-  | TmProj of info * term * string
-  | TmTrue of info
-  | TmFalse of info
-  | TmIf of info * term * term * term
+type Term =
+  | TmVar of Info * int * int
+  | TmAbs of Info * string * Ty * Term
+  | TmApp of Info * Term * Term
+  | TmRecord of Info * (string * Term) list
+  | TmProj of Info * Term * string
+  | TmTrue of Info
+  | TmFalse of Info
+  | TmIf of Info * Term * Term * Term
 
-type binding = | NameBind | VarBind of ty
+type Binding = | NameBind | VarBind of Ty
 
-type context = (string * binding) list
+type Context = (string * Binding) list
 
-type command = | Eval of info * term | Bind of info * string * binding
+type Command = | Eval of Info * Term | Bind of Info * string * Binding
 
 (* ---------------------------------------------------------------------- *)
 (* Context management *)
@@ -77,8 +77,8 @@ let tmmap onvar c t =
     | TmProj (fi, t1, l) -> TmProj (fi, walk c t1, l)
     | TmRecord (fi, fields) ->
         TmRecord (fi, List.map (fun (li, ti) -> (li, (walk c ti))) fields)
-    | (TmTrue fi as t) -> t
-    | (TmFalse fi as t) -> t
+    | (TmTrue _ as t) -> t
+    | (TmFalse _ as t) -> t
     | TmIf (fi, t1, t2, t3) -> TmIf (fi, walk c t1, walk c t2, walk c t3)
   in walk c t
   
@@ -148,28 +148,28 @@ let obox () = open_hvbox 2
 let cbox () = close_box()
 let ``break`` () = print_break 0 0
   
-let small t = match t with | TmVar (_, _, _) -> true | _ -> false
+let small t = match t with | TmVar (_) -> true | _ -> false
   
-let rec printty_Type outer tyT =
-  match tyT with | tyT -> printty_ArrowType outer tyT
-and printty_ArrowType outer tyT =
+let rec printtyType outer tyT =
+  match tyT with | tyT -> printtyArrowType outer tyT
+and printtyArrowType outer tyT =
   match tyT with
   | TyArr (tyT1, tyT2) ->
       (obox0 ();
-       printty_AType false tyT1;
+       printtyAType false tyT1;
        if outer then pr " " else ();
        pr "->";
        if outer then print_space () else ``break`` ();
-       printty_ArrowType outer tyT2;
+       printtyArrowType outer tyT2;
        cbox ())
-  | tyT -> printty_AType outer tyT
-and printty_AType outer tyT =
+  | tyT -> printtyAType outer tyT
+and printtyAType outer tyT =
   match tyT with
   | TyTop -> pr "Top"
   | TyRecord fields ->
       let pf i (li, tyTi) =
         (if li <> (string i) then (pr li; pr ":") else ();
-         printty_Type false tyTi) in
+         printtyType false tyTi) in
       let rec p i l =
         (match l with
          | [] -> ()
@@ -181,50 +181,50 @@ and printty_AType outer tyT =
               p (i + 1) rest))
       in (pr "{"; open_hovbox 0; p 1 fields; pr "}"; cbox ())
   | TyBool -> pr "Bool"
-  | tyT -> (pr "("; printty_Type outer tyT; pr ")")
+  | tyT -> (pr "("; printtyType outer tyT; pr ")")
   
-let printty tyT = printty_Type true tyT
+let printty tyT = printtyType true tyT
   
-let rec printtm_Term outer ctx t =
+let rec printtmTerm outer ctx t =
   match t with
-  | TmAbs (fi, x, tyT1, t2) ->
+  | TmAbs (_, x, tyT1, t2) ->
       let (ctx', x') = pickfreshname ctx x
       in
         (obox ();
          pr "lambda ";
          pr x';
          pr ":";
-         printty_Type false tyT1;
+         printtyType false tyT1;
          pr ".";
          if (small t2) && (not outer) then ``break`` () else print_space ();
-         printtm_Term outer ctx' t2;
+         printtmTerm outer ctx' t2;
          cbox ())
-  | TmIf (fi, t1, t2, t3) ->
+  | TmIf (_, t1, t2, t3) ->
       (obox0 ();
        pr "if ";
-       printtm_Term false ctx t1;
+       printtmTerm false ctx t1;
        print_space ();
        pr "then ";
-       printtm_Term false ctx t2;
+       printtmTerm false ctx t2;
        print_space ();
        pr "else ";
-       printtm_Term false ctx t3;
+       printtmTerm false ctx t3;
        cbox ())
-  | t -> printtm_AppTerm outer ctx t
-and printtm_AppTerm outer ctx t =
+  | t -> printtmAppTerm outer ctx t
+and printtmAppTerm outer ctx t =
   match t with
-  | TmApp (fi, t1, t2) ->
+  | TmApp (_, t1, t2) ->
       (obox0 ();
-       printtm_AppTerm false ctx t1;
+       printtmAppTerm false ctx t1;
        print_space ();
-       printtm_ATerm false ctx t2;
+       printtmATerm false ctx t2;
        cbox ())
-  | t -> printtm_PathTerm outer ctx t
-and printtm_PathTerm outer ctx t =
+  | t -> printtmPathTerm outer ctx t
+and printtmPathTerm outer ctx t =
   match t with
-  | TmProj (_, t1, l) -> (printtm_ATerm false ctx t1; pr "."; pr l)
-  | t -> printtm_ATerm outer ctx t
-and printtm_ATerm outer ctx t =
+  | TmProj (_, t1, l) -> (printtmATerm false ctx t1; pr "."; pr l)
+  | t -> printtmATerm outer ctx t
+and printtmATerm outer ctx t =
   match t with
   | TmVar (fi, x, n) ->
       if (ctxlength ctx) = n
@@ -239,10 +239,10 @@ and printtm_ATerm outer ctx t =
                          ((List.fold (fun s (x, _) -> s ^ (" " ^ x)) ""
                              ctx)
                             ^ " }]"))))))
-  | TmRecord (fi, fields) ->
+  | TmRecord (_, fields) ->
       let pf i (li, ti) =
         (if li <> (string i) then (pr li; pr "=") else ();
-         printtm_Term false ctx ti) in
+         printtmTerm false ctx ti) in
       let rec p i l =
         (match l with
          | [] -> ()
@@ -255,11 +255,11 @@ and printtm_ATerm outer ctx t =
       in (pr "{"; open_hovbox 0; p 1 fields; pr "}"; cbox ())
   | TmTrue _ -> pr "true"
   | TmFalse _ -> pr "false"
-  | t -> (pr "("; printtm_Term outer ctx t; pr ")")
+  | t -> (pr "("; printtmTerm outer ctx t; pr ")")
   
-let printtm ctx t = printtm_Term true ctx t
+let printtm ctx t = printtmTerm true ctx t
   
-let prbinding ctx b =
+let prbinding _ b =
   match b with | NameBind -> () | VarBind tyT -> (pr ": "; printty tyT)
   
 

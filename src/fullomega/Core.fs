@@ -35,7 +35,7 @@ let rec isval ctx t =
   | TmTAbs (_, _, _, _) -> true
   | _ -> false
   
-type store = term list
+type store = Term list
 
 let emptystore = []
   

@@ -34,7 +34,7 @@ let rec isval ctx t =
   | TmRecord (_, fields) -> List.for_all (fun (l, ti) -> isval ctx ti) fields
   | _ -> false
   
-type store = term list
+type store = Term list
 
 let emptystore = []
   

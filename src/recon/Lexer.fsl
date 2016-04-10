@@ -80,7 +80,7 @@ let reservedWords = [
 
 (* Support functions *)
 
-type buildfun = info -> Parser.token
+type buildfun = Info -> Parser.token
 let symbolTable = System.Collections.Generic.Dictionary<string, buildfun> (1024)
 do
   reservedWords

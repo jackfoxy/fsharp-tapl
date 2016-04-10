@@ -14,21 +14,21 @@ open FSharp.Compatibility.OCaml.Format
 
 (* ---------------------------------------------------------------------- *)
 (* Datatypes *)
-type ty =
-  | TyVar of int * int | TyAll of string * ty * ty | TyTop | TyArr of ty * ty
+type Ty =
+  | TyVar of int * int | TyAll of string * Ty * Ty | TyTop | TyArr of Ty * Ty
 
-type term =
-  | TmTAbs of info * string * ty * term
-  | TmTApp of info * term * ty
-  | TmVar of info * int * int
-  | TmAbs of info * string * ty * term
-  | TmApp of info * term * term
+type Term =
+  | TmTAbs of Info * string * Ty * Term
+  | TmTApp of Info * Term * Ty
+  | TmVar of Info * int * int
+  | TmAbs of Info * string * Ty * Term
+  | TmApp of Info * Term * Term
 
-type binding = | NameBind | TyVarBind of ty | VarBind of ty
+type Binding = | NameBind | TyVarBind of Ty | VarBind of Ty
 
-type context = (string * binding) list
+type Context = (string * Binding) list
 
-type command = | Eval of info * term | Bind of info * string * binding
+type Command = | Eval of Info * Term | Bind of Info * string * Binding
 
 (* ---------------------------------------------------------------------- *)
 (* Context management *)
@@ -111,7 +111,7 @@ let bindingshift d bind =
 (* Substitution *)
 let termSubst j s t =
   tmmap (fun fi j x n -> if x = j then termShift j s else TmVar (fi, x, n))
-    (fun j tyT -> tyT) j t
+    (fun _ tyT -> tyT) j t
   
 let termSubstTop s t = termShift (-1) (termSubst 0 (termShift 1 s) t)
   
@@ -121,7 +121,7 @@ let typeSubst tyS j tyT =
 let typeSubstTop tyS tyT = typeShift (-1) (typeSubst (typeShift 1 tyS) 0 tyT)
   
 let rec tytermSubst tyS j t =
-  tmmap (fun fi c x n -> TmVar (fi, x, n)) (fun j tyT -> typeSubst tyS j tyT)
+  tmmap (fun fi _ x n -> TmVar (fi, x, n)) (fun j tyT -> typeSubst tyS j tyT)
     j t
   
 let tytermSubstTop tyS t = termShift (-1) (tytermSubst (typeShift 1 tyS) 0 t)
@@ -173,9 +173,9 @@ let obox () = open_hvbox 2
 let cbox () = close_box()
 let ``break`` () = print_break 0 0
   
-let small t = match t with | TmVar (_, _, _) -> true | _ -> false
+let small t = match t with | TmVar (_) -> true | _ -> false
   
-let rec printty_Type outer ctx tyT =
+let rec printtyType outer ctx tyT =
   match tyT with
   | TyAll (tyX, tyT1, tyT2) ->
       let (ctx1, tyX) = pickfreshname ctx tyX
@@ -186,23 +186,23 @@ let rec printty_Type outer ctx tyT =
          proty ctx tyT1;
          pr ".";
          print_space ();
-         printty_Type outer ctx1 tyT2;
+         printtyType outer ctx1 tyT2;
          cbox ())
-  | tyT -> printty_ArrowType outer ctx tyT
+  | tyT -> printtyArrowType outer ctx tyT
 and proty ctx tyS =
-  if tyS <> TyTop then (pr "<:"; printty_Type false ctx tyS) else ()
-and printty_ArrowType outer ctx tyT =
+  if tyS <> TyTop then (pr "<:"; printtyType false ctx tyS) else ()
+and printtyArrowType outer ctx tyT =
   match tyT with
   | TyArr (tyT1, tyT2) ->
       (obox0 ();
-       printty_AType false ctx tyT1;
+       printtyAType false ctx tyT1;
        if outer then pr " " else ();
        pr "->";
        if outer then print_space () else ``break`` ();
-       printty_ArrowType outer ctx tyT2;
+       printtyArrowType outer ctx tyT2;
        cbox ())
-  | tyT -> printty_AType outer ctx tyT
-and printty_AType outer ctx tyT =
+  | tyT -> printtyAType outer ctx tyT
+and printtyAType outer ctx tyT =
   match tyT with
   | TyVar (x, n) ->
       if (ctxlength ctx) = n
@@ -218,13 +218,13 @@ and printty_AType outer ctx tyT =
                              ctx)
                             ^ " }]"))))))
   | TyTop -> pr "Top"
-  | tyT -> (pr "("; printty_Type outer ctx tyT; pr ")")
+  | tyT -> (pr "("; printtyType outer ctx tyT; pr ")")
   
-let printty ctx tyT = printty_Type true ctx tyT
+let printty ctx tyT = printtyType true ctx tyT
   
-let rec printtm_Term outer ctx t =
+let rec printtmTerm outer ctx t =
   match t with
-  | TmTAbs (fi, x, tyS, t) ->
+  | TmTAbs (_, x, tyS, t) ->
       let (ctx1, x) = pickfreshname ctx x
       in
         (obox ();
@@ -233,39 +233,39 @@ let rec printtm_Term outer ctx t =
          proty ctx tyS;
          pr ".";
          if (small t) && (not outer) then ``break`` () else print_space ();
-         printtm_Term outer ctx1 t;
+         printtmTerm outer ctx1 t;
          cbox ())
-  | TmAbs (fi, x, tyT1, t2) ->
+  | TmAbs (_, x, tyT1, t2) ->
       let (ctx', x') = pickfreshname ctx x
       in
         (obox ();
          pr "lambda ";
          pr x';
          pr ":";
-         printty_Type false ctx tyT1;
+         printtyType false ctx tyT1;
          pr ".";
          if (small t2) && (not outer) then ``break`` () else print_space ();
-         printtm_Term outer ctx' t2;
+         printtmTerm outer ctx' t2;
          cbox ())
-  | t -> printtm_AppTerm outer ctx t
-and printtm_AppTerm outer ctx t =
+  | t -> printtmAppTerm outer ctx t
+and printtmAppTerm outer ctx t =
   match t with
-  | TmTApp (fi, t, tyS) ->
+  | TmTApp (_, t, tyS) ->
       (obox0 ();
-       printtm_AppTerm false ctx t;
+       printtmAppTerm false ctx t;
        print_space ();
        pr "[";
-       printty_Type false ctx tyS;
+       printtyType false ctx tyS;
        pr "]";
        cbox ())
-  | TmApp (fi, t1, t2) ->
+  | TmApp (_, t1, t2) ->
       (obox0 ();
-       printtm_AppTerm false ctx t1;
+       printtmAppTerm false ctx t1;
        print_space ();
-       printtm_ATerm false ctx t2;
+       printtmATerm false ctx t2;
        cbox ())
-  | t -> printtm_ATerm outer ctx t
-and printtm_ATerm outer ctx t =
+  | t -> printtmATerm outer ctx t
+and printtmATerm outer ctx t =
   match t with
   | TmVar (fi, x, n) ->
       if (ctxlength ctx) = n
@@ -280,14 +280,14 @@ and printtm_ATerm outer ctx t =
                          ((List.fold (fun s (x, _) -> s ^ (" " ^ x)) ""
                              ctx)
                             ^ " }]"))))))
-  | t -> (pr "("; printtm_Term outer ctx t; pr ")")
+  | t -> (pr "("; printtmTerm outer ctx t; pr ")")
   
-let printtm ctx t = printtm_Term true ctx t
+let printtm ctx t = printtmTerm true ctx t
   
 let prbinding ctx b =
   match b with
   | NameBind -> ()
-  | TyVarBind tyS -> (pr "<: "; printty_Type false ctx tyS)
+  | TyVarBind tyS -> (pr "<: "; printtyType false ctx tyS)
   | VarBind tyT -> (pr ": "; printty ctx tyT)
   
 

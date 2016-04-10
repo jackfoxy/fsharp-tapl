@@ -18,7 +18,7 @@ open Ast
 // (as of Oct-26-2012) where it doesn't correctly parse %type declarations
 // containing a function arrow ('->'). By creating an alias for the type,
 // we can use the alias for the %type declaration and it'll be parsed correctly.
-type Toplevel = Ast.context -> (Ast.command list * Ast.context)
+type Toplevel = Ast.Context -> (Ast.Command list * Ast.Context)
 %}
 
 /* ---------------------------------------------------------------------- */
@@ -34,30 +34,30 @@ type Toplevel = Ast.context -> (Ast.command list * Ast.context)
  */
 
 /* Keyword tokens */
-%token <Support.Error.info> TYPE
-%token <Support.Error.info> INERT
-%token <Support.Error.info> LAMBDA
-%token <Support.Error.info> TTOP
-%token <Support.Error.info> IF
-%token <Support.Error.info> THEN
-%token <Support.Error.info> ELSE
-%token <Support.Error.info> TRUE
-%token <Support.Error.info> FALSE
-%token <Support.Error.info> BOOL
-%token <Support.Error.info> LET
-%token <Support.Error.info> IN
-%token <Support.Error.info> FIX
-%token <Support.Error.info> LETREC
-%token <Support.Error.info> USTRING
-%token <Support.Error.info> UNIT
-%token <Support.Error.info> UUNIT
-%token <Support.Error.info> AS
-%token <Support.Error.info> TIMESFLOAT
-%token <Support.Error.info> UFLOAT
-%token <Support.Error.info> SUCC
-%token <Support.Error.info> PRED
-%token <Support.Error.info> ISZERO
-%token <Support.Error.info> NAT
+%token <Support.Error.Info> TYPE
+%token <Support.Error.Info> INERT
+%token <Support.Error.Info> LAMBDA
+%token <Support.Error.Info> TTOP
+%token <Support.Error.Info> IF
+%token <Support.Error.Info> THEN
+%token <Support.Error.Info> ELSE
+%token <Support.Error.Info> TRUE
+%token <Support.Error.Info> FALSE
+%token <Support.Error.Info> BOOL
+%token <Support.Error.Info> LET
+%token <Support.Error.Info> IN
+%token <Support.Error.Info> FIX
+%token <Support.Error.Info> LETREC
+%token <Support.Error.Info> USTRING
+%token <Support.Error.Info> UNIT
+%token <Support.Error.Info> UUNIT
+%token <Support.Error.Info> AS
+%token <Support.Error.Info> TIMESFLOAT
+%token <Support.Error.Info> UFLOAT
+%token <Support.Error.Info> SUCC
+%token <Support.Error.Info> PRED
+%token <Support.Error.Info> ISZERO
+%token <Support.Error.Info> NAT
 
 /* Identifier and constant value tokens */
 %token <string Support.Error.withinfo> UCID  /* uppercase-initial */
@@ -67,51 +67,51 @@ type Toplevel = Ast.context -> (Ast.command list * Ast.context)
 %token <string Support.Error.withinfo> STRINGV
 
 /* Symbolic tokens */
-%token <Support.Error.info> APOSTROPHE
-%token <Support.Error.info> DQUOTE
-%token <Support.Error.info> ARROW
-%token <Support.Error.info> BANG
-%token <Support.Error.info> BARGT
-%token <Support.Error.info> BARRCURLY
-%token <Support.Error.info> BARRSQUARE
-%token <Support.Error.info> COLON
-%token <Support.Error.info> COLONCOLON
-%token <Support.Error.info> COLONEQ
-%token <Support.Error.info> COLONHASH
-%token <Support.Error.info> COMMA
-%token <Support.Error.info> DARROW
-%token <Support.Error.info> DDARROW
-%token <Support.Error.info> DOT
-%token <Support.Error.info> EOF
-%token <Support.Error.info> EQ
-%token <Support.Error.info> EQEQ
-%token <Support.Error.info> EXISTS
-%token <Support.Error.info> GT
-%token <Support.Error.info> HASH
-%token <Support.Error.info> LCURLY
-%token <Support.Error.info> LCURLYBAR
-%token <Support.Error.info> LEFTARROW
-%token <Support.Error.info> LPAREN
-%token <Support.Error.info> LSQUARE
-%token <Support.Error.info> LSQUAREBAR
-%token <Support.Error.info> LT
-%token <Support.Error.info> RCURLY
-%token <Support.Error.info> RPAREN
-%token <Support.Error.info> RSQUARE
-%token <Support.Error.info> SEMI
-%token <Support.Error.info> SLASH
-%token <Support.Error.info> STAR
-%token <Support.Error.info> TRIANGLE
-%token <Support.Error.info> USCORE
-%token <Support.Error.info> VBAR
+%token <Support.Error.Info> APOSTROPHE
+%token <Support.Error.Info> DQUOTE
+%token <Support.Error.Info> ARROW
+%token <Support.Error.Info> BANG
+%token <Support.Error.Info> BARGT
+%token <Support.Error.Info> BARRCURLY
+%token <Support.Error.Info> BARRSQUARE
+%token <Support.Error.Info> COLON
+%token <Support.Error.Info> COLONCOLON
+%token <Support.Error.Info> COLONEQ
+%token <Support.Error.Info> COLONHASH
+%token <Support.Error.Info> COMMA
+%token <Support.Error.Info> DARROW
+%token <Support.Error.Info> DDARROW
+%token <Support.Error.Info> DOT
+%token <Support.Error.Info> EOF
+%token <Support.Error.Info> EQ
+%token <Support.Error.Info> EQEQ
+%token <Support.Error.Info> EXISTS
+%token <Support.Error.Info> GT
+%token <Support.Error.Info> HASH
+%token <Support.Error.Info> LCURLY
+%token <Support.Error.Info> LCURLYBAR
+%token <Support.Error.Info> LEFTARROW
+%token <Support.Error.Info> LPAREN
+%token <Support.Error.Info> LSQUARE
+%token <Support.Error.Info> LSQUAREBAR
+%token <Support.Error.Info> LT
+%token <Support.Error.Info> RCURLY
+%token <Support.Error.Info> RPAREN
+%token <Support.Error.Info> RSQUARE
+%token <Support.Error.Info> SEMI
+%token <Support.Error.Info> SLASH
+%token <Support.Error.Info> STAR
+%token <Support.Error.Info> TRIANGLE
+%token <Support.Error.Info> USCORE
+%token <Support.Error.Info> VBAR
 
 /* ---------------------------------------------------------------------- */
 /* The starting production of the generated parser is the syntactic class
    toplevel.  The type that is returned when a toplevel is recognized is
-     Ast.context -> (Ast.command list * Ast.context) 
+     Ast.Context -> (Ast.Command list * Ast.Context) 
    that is, the parser returns to the user program a function that,
    when given a naming context, returns a fully parsed list of
-   Ast.commands and the new naming context that results when
+   Ast.Commands and the new naming context that results when
    all the names bound in these commands are defined.
 
    All of the syntactic productions in the parser follow the same pattern:

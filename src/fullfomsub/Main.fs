@@ -75,7 +75,7 @@ let rec processCommand ctx cmd =
       let tyT = typeof ctx t in
       let t' = eval ctx t
       in
-        (printtm_ATerm true ctx t';
+        (printtmATerm true ctx t';
          print_break 1 2;
          pr ": ";
          printty ctx tyT;

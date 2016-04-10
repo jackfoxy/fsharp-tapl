@@ -14,29 +14,29 @@ open FSharp.Compatibility.OCaml.Format
 
 (* ---------------------------------------------------------------------- *)
 (* Datatypes *)
-type term =
-  | TmTrue of info
-  | TmFalse of info
-  | TmIf of info * term * term * term
-  | TmVar of info * int * int
-  | TmAbs of info * string * term
-  | TmApp of info * term * term
-  | TmRecord of info * (string * term) list
-  | TmProj of info * term * string
-  | TmFloat of info * float
-  | TmTimesfloat of info * term * term
-  | TmString of info * string
-  | TmZero of info
-  | TmSucc of info * term
-  | TmPred of info * term
-  | TmIsZero of info * term
-  | TmLet of info * string * term * term
+type Term =
+  | TmTrue of Info
+  | TmFalse of Info
+  | TmIf of Info * Term * Term * Term
+  | TmVar of Info * int * int
+  | TmAbs of Info * string * Term
+  | TmApp of Info * Term * Term
+  | TmRecord of Info * (string * Term) list
+  | TmProj of Info * Term * string
+  | TmFloat of Info * float
+  | TmTimesfloat of Info * Term * Term
+  | TmString of Info * string
+  | TmZero of Info
+  | TmSucc of Info * Term
+  | TmPred of Info * Term
+  | TmIsZero of Info * Term
+  | TmLet of Info * string * Term * Term
 
-type binding = | NameBind | TmAbbBind of term
+type Binding = | NameBind | TmAbbBind of Term
 
-type context = (string * binding) list
+type Context = (string * Binding) list
 
-type command = | Eval of info * term | Bind of info * string * binding
+type Command = | Eval of Info * Term | Bind of Info * string * Binding
 
 (* ---------------------------------------------------------------------- *)
 (* Context management *)
@@ -76,8 +76,8 @@ let rec name2index fi ctx x =
 let tmmap onvar c t =
   let rec walk c t =
     match t with
-    | (TmTrue fi as t) -> t
-    | (TmFalse fi as t) -> t
+    | (TmTrue _ as t) -> t
+    | (TmFalse _ as t) -> t
     | TmIf (fi, t1, t2, t3) -> TmIf (fi, walk c t1, walk c t2, walk c t3)
     | TmVar (fi, x, n) -> onvar fi c x n
     | TmAbs (fi, x, t2) -> TmAbs (fi, x, walk (c + 1) t2)
@@ -167,22 +167,22 @@ let obox () = open_hvbox 2
 let cbox () = close_box()
 let ``break`` () = print_break 0 0
   
-let small t = match t with | TmVar (_, _, _) -> true | _ -> false
+let small t = match t with | TmVar (_) -> true | _ -> false
   
-let rec printtm_Term outer ctx t =
+let rec printtmTerm outer ctx t =
   match t with
-  | TmIf (fi, t1, t2, t3) ->
+  | TmIf (_, t1, t2, t3) ->
       (obox0 ();
        pr "if ";
-       printtm_Term false ctx t1;
+       printtmTerm false ctx t1;
        print_space ();
        pr "then ";
-       printtm_Term false ctx t2;
+       printtmTerm false ctx t2;
        print_space ();
        pr "else ";
-       printtm_Term false ctx t3;
+       printtmTerm false ctx t3;
        cbox ())
-  | TmAbs (fi, x, t2) ->
+  | TmAbs (_, x, t2) ->
       let (ctx', x') = pickfreshname ctx x
       in
         (obox ();
@@ -190,41 +190,41 @@ let rec printtm_Term outer ctx t =
          pr x';
          pr ".";
          if (small t2) && (not outer) then ``break`` () else print_space ()
-         printtm_Term outer ctx' t2;
+         printtmTerm outer ctx' t2;
          cbox ())
-  | TmLet (fi, x, t1, t2) ->
+  | TmLet (_, x, t1, t2) ->
       (obox0 ();
        pr "let ";
        pr x;
        pr " = ";
-       printtm_Term false ctx t1;
+       printtmTerm false ctx t1;
        print_space ();
        pr "in";
        print_space ();
-       printtm_Term false (addname ctx x) t2;
+       printtmTerm false (addname ctx x) t2;
        cbox ())
-  | t -> printtm_AppTerm outer ctx t
-and printtm_AppTerm outer ctx t =
+  | t -> printtmAppTerm outer ctx t
+and printtmAppTerm outer ctx t =
   match t with
-  | TmApp (fi, t1, t2) ->
+  | TmApp (_, t1, t2) ->
       (obox0 ();
-       printtm_AppTerm false ctx t1;
+       printtmAppTerm false ctx t1;
        print_space ();
-       printtm_ATerm false ctx t2;
+       printtmATerm false ctx t2;
        cbox ())
-  | TmTimesfloat (_, t1, t2) ->
+  | TmTimesfloat (_, _, t2) ->
       (pr "timesfloat ";
-       printtm_ATerm false ctx t2;
+       printtmATerm false ctx t2;
        pr " ";
-       printtm_ATerm false ctx t2)
-  | TmPred (_, t1) -> (pr "pred "; printtm_ATerm false ctx t1)
-  | TmIsZero (_, t1) -> (pr "iszero "; printtm_ATerm false ctx t1)
-  | t -> printtm_PathTerm outer ctx t
-and printtm_PathTerm outer ctx t =
+       printtmATerm false ctx t2)
+  | TmPred (_, t1) -> (pr "pred "; printtmATerm false ctx t1)
+  | TmIsZero (_, t1) -> (pr "iszero "; printtmATerm false ctx t1)
+  | t -> printtmPathTerm outer ctx t
+and printtmPathTerm outer ctx t =
   match t with
-  | TmProj (_, t1, l) -> (printtm_ATerm false ctx t1; pr "."; pr l)
-  | t -> printtm_ATerm outer ctx t
-and printtm_ATerm outer ctx t =
+  | TmProj (_, t1, l) -> (printtmATerm false ctx t1; pr "."; pr l)
+  | t -> printtmATerm outer ctx t
+and printtmATerm outer ctx t =
   match t with
   | TmTrue _ -> pr "true"
   | TmFalse _ -> pr "false"
@@ -241,10 +241,10 @@ and printtm_ATerm outer ctx t =
                          ((List.fold (fun s (x, _) -> s ^ (" " ^ x)) ""
                              ctx)
                             ^ " }]"))))))
-  | TmRecord (fi, fields) ->
+  | TmRecord (_, fields) ->
       let pf i (li, ti) =
         (if li <> (string i) then (pr li; pr "=") else ();
-         printtm_Term false ctx ti) in
+         printtmTerm false ctx ti) in
       let rec p i l =
         (match l with
          | [] -> ()
@@ -257,17 +257,17 @@ and printtm_ATerm outer ctx t =
       in (pr "{"; open_hovbox 0; p 1 fields; pr "}"; cbox ())
   | TmFloat (_, s) -> pr (string s)
   | TmString (_, s) -> pr ("\"" ^ (s ^ "\""))
-  | TmZero fi -> pr "0"
+  | TmZero _ -> pr "0"
   | TmSucc (_, t1) ->
       let rec f n t =
         (match t with
          | TmZero _ -> pr (string n)
          | TmSucc (_, s) -> f (n + 1) s
-         | _ -> (pr "(succ "; printtm_ATerm false ctx t1; pr ")"))
+         | _ -> (pr "(succ "; printtmATerm false ctx t1; pr ")"))
       in f 1 t1
-  | t -> (pr "("; printtm_Term outer ctx t; pr ")")
+  | t -> (pr "("; printtmTerm outer ctx t; pr ")")
   
-let printtm ctx t = printtm_Term true ctx t
+let printtm ctx t = printtmTerm true ctx t
   
 let prbinding ctx b =
   match b with | NameBind -> () | TmAbbBind t -> (pr "= "; printtm ctx t)
