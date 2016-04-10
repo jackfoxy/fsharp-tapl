@@ -18,7 +18,6 @@ module Main
 
 open Microsoft.FSharp.Text
 open Microsoft.FSharp.Text.Lexing
-open FSharp.Compatibility.OCaml
 open FSharp.Compatibility.OCaml.Format
 open Ast
 open Core
@@ -34,12 +33,12 @@ let parseFile (inFile : string) =
     with Parsing.RecoverableParseError ->
         error (Lexer.info lexbuf) "Parse error"
   
-let prbindingty ctx b =
+let prbindingty _ b =
   match b with | NameBind -> () | VarBind tyT -> (pr ": "; printty tyT)
   
-let rec process_command ctx cmd =
+let rec processCommand ctx cmd =
   match cmd with
-  | Eval (fi, t) ->
+  | Eval (_, t) ->
       let tyT = typeof ctx t in
       let t' = eval ctx t
       in
@@ -49,32 +48,34 @@ let rec process_command ctx cmd =
          printty tyT;
          force_newline ();
          ctx)
-  | Bind (fi, x, bind) ->
+  | Bind (_, x, bind) ->
       (pr x;
        pr " ";
        prbindingty ctx bind;
        force_newline ();
        addbinding ctx x bind)
   
-let process_file f ctx =
+let processFile f ctx =
   (Common.alreadyImported := f :: !Common.alreadyImported;
    let (cmds, _) = parseFile f ctx in
    let g ctx c =
      (open_hvbox 0;
-      let results = process_command ctx c in (print_flush (); results))
+      let results = processCommand ctx c in (print_flush (); results))
    in List.fold g ctx cmds)
   
 let main () =
-  let inFile = Common.parseArgs () in let _ = process_file inFile emptycontext in ()
+  let inFile = Common.parseArgs ()
+  processFile inFile emptycontext |> ignore
   
-let () = set_max_boxes 1000
+set_max_boxes 1000
+set_margin 67
   
-let () = set_margin 67
+let res =
+    try (fun () -> try (main (); 0) with | Exit x -> x) ()
+    with e ->
+        printfn "%A" e
+        exit 2
   
-let res = Printexc.catch (fun () -> try (main (); 0) with | Exit x -> x) ()
+print_flush ()
   
-let () = print_flush ()
-  
-let () = exit res
-  
-
+exit res

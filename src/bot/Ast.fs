@@ -62,7 +62,7 @@ let rec pickfreshname ctx x =
         ((x, NameBind) :: ctx), x
   
 let index2name fi ctx x =
-    try let xn, _ = List.nth ctx x
+    try let xn, _ = List.item x ctx
         xn
     with
     | Failure _ ->
@@ -113,7 +113,7 @@ let termSubstTop s t =
 (* ---------------------------------------------------------------------- *)
 (* Context management (continued) *)
 let rec getbinding fi ctx i =
-    try let _, bind = List.nth ctx i
+    try let _, bind = List.item i ctx
         bind
     with Failure _ ->
         let msg = Printf.sprintf "Variable lookup failure: offset: %d, ctx size: %d" i (List.length ctx)

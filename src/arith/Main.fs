@@ -18,7 +18,6 @@ module Main
 
 open Microsoft.FSharp.Text
 open Microsoft.FSharp.Text.Lexing
-open FSharp.Compatibility.OCaml
 open FSharp.Compatibility.OCaml.Format
 open Ast
 open Core
@@ -34,34 +33,25 @@ let parseFile (inFile : string) =
     with Parsing.RecoverableParseError ->
         error (Lexer.info lexbuf) "Parse error"
 
-let rec process_command cmd =
+let rec processCommand cmd =
     match cmd with
-    | Eval (fi, t) ->
+    | Eval (_, t) ->
         let t' = eval t
         printtm_ATerm true t'
         force_newline ()
   
-let process_file f =
+let processFile f =
     Common.alreadyImported := f :: !Common.alreadyImported
     let cmds = parseFile f
     let g c =
         open_hvbox 0
-        let results = process_command c
+        let results = processCommand c
         print_flush ()
         results
     List.iter g cmds
 
 let main () =
     let inFile = Common.parseArgs ()
-    process_file inFile
+    processFile inFile
 
-let () = set_max_boxes 1000
-  
-let () = set_margin 67
-  
-let res = Printexc.catch (fun () -> try (main (); 0) with | Exit x -> x) ()
-  
-let () = print_flush ()
-  
-let () = exit res
-
+Common.runMain main

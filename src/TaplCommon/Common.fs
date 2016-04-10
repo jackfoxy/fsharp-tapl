@@ -1,6 +1,7 @@
 ﻿namespace TaplCommon
 
 open FSharp.Compatibility.OCaml
+open FSharp.Compatibility.OCaml.Format
 open Core
 
 module Common =
@@ -28,13 +29,33 @@ module Common =
     let openfile infile =
         let rec trynext l =
             match l with
-            | [] -> err ("Could not find " ^ infile)
+            | [] -> err ("Could not find " + infile)
             | d :: rest ->
-                let name = if d = "" then infile else (d ^ "/" ^ infile)
+                let name = if d = "" then infile else (d + "/" + infile)
                 try open_in name
                 with Sys_error m ->
                     trynext rest
         trynext !searchpath
 
     let alreadyImported = ref ([] : string list)
+
+    let runMain (main : unit -> unit) =
+
+        set_max_boxes 1000
+        set_margin 67
+        
+        let res =
+            try 
+                (fun () -> 
+                    try 
+                        main ()
+                        0 
+                    with | Exit x -> x) ()
+            with e ->
+                printfn "%A" e
+                exit 2
+  
+        print_flush ()
+  
+        exit res
 

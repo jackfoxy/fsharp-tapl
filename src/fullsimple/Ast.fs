@@ -82,7 +82,7 @@ let rec pickfreshname ctx x =
   else (((x, NameBind) :: ctx), x)
   
 let index2name fi ctx x =
-  try let (xn, _) = List.nth ctx x in xn
+  try let (xn, _) = List.item x ctx in xn
   with
   | Failure _ ->
       let msg =
@@ -164,12 +164,12 @@ let bindingshift d bind =
   match bind with
   | NameBind -> NameBind
   | TyVarBind -> TyVarBind
-  | TmAbbBind (t, tyT_opt) ->
-      let tyT_opt' =
-        (match tyT_opt with
+  | TmAbbBind (t, tyTopt) ->
+      let tyTopt' =
+        (match tyTopt with
          | None -> None
          | Some tyT -> Some (typeShift d tyT))
-      in TmAbbBind (termShift d t, tyT_opt')
+      in TmAbbBind (termShift d t, tyTopt')
   | VarBind tyT -> VarBind (typeShift d tyT)
   | TyAbbBind tyT -> TyAbbBind (typeShift d tyT)
   
@@ -195,7 +195,7 @@ let tytermSubstTop tyS t = termShift (-1) (tytermSubst (typeShift 1 tyS) 0 t)
 (* ---------------------------------------------------------------------- *)
 (* Context management (continued) *)
 let rec getbinding fi ctx i =
-  try let (_, bind) = List.nth ctx i in bindingshift (i + 1) bind
+  try let (_, bind) = List.item i ctx in bindingshift (i + 1) bind
   with
   | Failure _ ->
       let msg =

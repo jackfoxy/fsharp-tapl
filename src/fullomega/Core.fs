@@ -41,7 +41,7 @@ let emptystore = []
   
 let extendstore store v = ((List.length store), (List.append store [ v ]))
   
-let lookuploc store l = List.nth store l
+let lookuploc store l = List.item l store
   
 let updatestore store n v =
   let rec f s =

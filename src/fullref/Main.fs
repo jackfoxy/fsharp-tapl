@@ -18,7 +18,6 @@ module Main
 
 open Microsoft.FSharp.Text
 open Microsoft.FSharp.Text.Lexing
-open FSharp.Compatibility.OCaml
 open FSharp.Compatibility.OCaml.Format
 open Ast
 open Core
@@ -35,74 +34,62 @@ let parseFile (inFile : string) =
         error (Lexer.info lexbuf) "Parse error"
     
 let checkbinding fi ctx b =
-  match b with
-  | NameBind -> NameBind
-  | VarBind tyT -> VarBind tyT
-  | TmAbbBind (t, None) -> TmAbbBind (t, Some (typeof ctx t))
-  | TmAbbBind (t, (Some tyT)) ->
-      let tyT' = typeof ctx t
-      in
+    match b with
+    | NameBind -> NameBind
+    | VarBind tyT -> VarBind tyT
+    | TmAbbBind (t, None) -> TmAbbBind (t, Some (typeof ctx t))
+    | TmAbbBind (t, (Some tyT)) ->
+        let tyT' = typeof ctx t
         if subtype ctx tyT' tyT
         then TmAbbBind (t, Some tyT)
         else error fi "Type of binding does not match declared type"
-  | TyVarBind -> TyVarBind
-  | TyAbbBind tyT -> TyAbbBind tyT
+    | TyVarBind -> TyVarBind
+    | TyAbbBind tyT -> TyAbbBind tyT
   
 let prbindingty ctx b =
-  match b with
-  | NameBind -> ()
-  | TyVarBind -> ()
-  | VarBind tyT -> (pr ": "; printty ctx tyT)
-  | TmAbbBind (t, tyT_opt) ->
-      (pr ": ";
-       (match tyT_opt with
+    match b with
+    | NameBind -> ()
+    | TyVarBind -> ()
+    | VarBind tyT -> (pr ": "; printty ctx tyT)
+    | TmAbbBind (t, tyTopt) ->
+        pr ": "
+        match tyTopt with
         | None -> printty ctx (typeof ctx t)
-        | Some tyT -> printty ctx tyT))
-  | TyAbbBind tyT -> pr ":: *"
+        | Some tyT -> printty ctx tyT
+    | TyAbbBind _ -> pr ":: *"
   
-let rec process_command (ctx, store) cmd =
-  match cmd with
-  | Eval (fi, t) ->
-      let tyT = typeof ctx t in
-      let (t', store) = eval ctx store t
-      in
-        (printtm_ATerm true ctx t';
-         print_break 1 2;
-         pr ": ";
-         printty ctx tyT;
-         force_newline ();
-         (ctx, store))
-  | Bind (fi, x, bind) ->
-      let bind = checkbinding fi ctx bind in
-      let (bind', store') = evalbinding ctx store bind
-      in
-        (pr x;
-         pr " ";
-         prbindingty ctx bind';
-         force_newline ();
-         ((addbinding ctx x bind'), (shiftstore 1 store')))
+let rec processCommand (ctx, store) cmd =
+    match cmd with
+    | Eval (_, t) ->
+        let tyT = typeof ctx t
+        let (t', store) = eval ctx store t
+        printtm_ATerm true ctx t'
+        print_break 1 2
+        pr ": "
+        printty ctx tyT
+        force_newline ()
+        (ctx, store)
+    | Bind (fi, x, bind) ->
+        let bind = checkbinding fi ctx bind 
+        let (bind', store') = evalbinding ctx store bind
+        pr x
+        pr " "
+        prbindingty ctx bind'
+        force_newline ()
+        ((addbinding ctx x bind'), (shiftstore 1 store'))
   
-let process_file f (ctx, store) =
-  (Common.alreadyImported := f :: !Common.alreadyImported;
-   let (cmds, _) = parseFile f ctx in
-   let g (ctx, store) c =
-     (open_hvbox 0;
-      let results = process_command (ctx, store) c
-      in (print_flush (); results))
-   in List.fold g (ctx, store) cmds)
+let processFile f (ctx, store) =
+    Common.alreadyImported := f :: !Common.alreadyImported;
+    let (cmds, _) = parseFile f ctx 
+    let g (ctx, store) c =
+        open_hvbox 0;
+        let results = processCommand (ctx, store) c
+        print_flush ()
+        results
+    List.fold g (ctx, store) cmds
   
 let main () =
-  let inFile = Common.parseArgs () in
-  let _ = process_file inFile (emptycontext, emptystore) in ()
+  let inFile = Common.parseArgs ()
+  processFile inFile (emptycontext, emptystore) |> ignore
   
-let () = set_max_boxes 1000
-  
-let () = set_margin 67
-  
-let res = Printexc.catch (fun () -> try (main (); 0) with | Exit x -> x) ()
-  
-let () = print_flush ()
-  
-let () = exit res
-  
-
+Common.runMain main

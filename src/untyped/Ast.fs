@@ -46,7 +46,7 @@ let rec pickfreshname ctx x =
   else (((x, NameBind) :: ctx), x)
   
 let index2name fi ctx x =
-  try let (xn, _) = List.nth ctx x in xn
+  try let (xn, _) = List.item x ctx in xn
   with
   | Failure _ ->
       let msg =
@@ -88,7 +88,7 @@ let termSubstTop s t = termShift (-1) (termSubst 0 (termShift 1 s) t)
 (* ---------------------------------------------------------------------- *)
 (* Context management (continued) *)
 let rec getbinding fi ctx i =
-  try let (_, bind) = List.nth ctx i in bind
+  try let (_, bind) = List.item i ctx in bind
   with
   | Failure _ ->
       let msg =

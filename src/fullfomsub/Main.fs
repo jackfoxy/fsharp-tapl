@@ -18,7 +18,6 @@ module Main
 
 open Microsoft.FSharp.Text
 open Microsoft.FSharp.Text.Lexing
-open FSharp.Compatibility.OCaml
 open FSharp.Compatibility.OCaml.Format
 open Ast
 open Core
@@ -59,20 +58,20 @@ let prbindingty ctx b =
   | NameBind -> ()
   | TyVarBind tyS -> (pr "<: "; printty ctx tyS)
   | VarBind tyT -> (pr ": "; printty ctx tyT)
-  | TyAbbBind (tyT, knK_opt) ->
+  | TyAbbBind (tyT, knKopt) ->
       (pr ":: ";
-       (match knK_opt with
+       (match knKopt with
         | None -> printkn ctx (kindof ctx tyT)
         | Some knK -> printkn ctx knK))
-  | TmAbbBind (t, tyT_opt) ->
+  | TmAbbBind (t, tyTopt) ->
       (pr ": ";
-       (match tyT_opt with
+       (match tyTopt with
         | None -> printty ctx (typeof ctx t)
         | Some tyT -> printty ctx tyT))
   
-let rec process_command ctx cmd =
+let rec processCommand ctx cmd =
   match cmd with
-  | Eval (fi, t) ->
+  | Eval (_, t) ->
       let tyT = typeof ctx t in
       let t' = eval ctx t
       in
@@ -114,25 +113,18 @@ let rec process_command ctx cmd =
                 ctx2)
          | _ -> error fi "existential type expected")
   
-let process_file f ctx =
-  (Common.alreadyImported := f :: !Common.alreadyImported;
-   let (cmds, _) = parseFile f ctx in
-   let g ctx c =
-     (open_hvbox 0;
-      let results = process_command ctx c in (print_flush (); results))
-   in List.fold g ctx cmds)
+let processFile f ctx =
+    Common.alreadyImported := f :: !Common.alreadyImported
+    let (cmds, _) = parseFile f ctx
+    let g ctx c =
+        open_hvbox 0
+        let results = processCommand ctx c 
+        print_flush ()
+        results
+    List.fold g ctx cmds
   
 let main () =
-  let inFile = Common.parseArgs () in let _ = process_file inFile emptycontext in ()
+    let inFile = Common.parseArgs ()
+    processFile inFile emptycontext |> ignore
   
-let () = set_max_boxes 1000
-  
-let () = set_margin 67
-  
-let res = Printexc.catch (fun () -> try (main (); 0) with | Exit x -> x) ()
-  
-let () = print_flush ()
-  
-let () = exit res
-  
-
+Common.runMain main
