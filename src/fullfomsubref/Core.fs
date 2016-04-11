@@ -10,11 +10,10 @@ See LICENSE.TXT for licensing details.
 /// Core typechecking and evaluation functions.
 module Core
 
-open FSharp.Compatibility.OCaml
 open Ast
+open TaplCommon
 
 (* ------------------------   EVALUATION  ------------------------ *)
-exception NoRuleApplies
   
 let rec isnumericval ctx t =
   match t with
@@ -29,18 +28,18 @@ let rec isval ctx t =
   | TmFloat _ -> true
   | TmString _ -> true
   | TmUnit _ -> true
-  | TmTag (_, l, t1, _) -> isval ctx t1
-  | TmLoc (_, _) -> true
+  | TmTag (_, _, t1, _) -> isval ctx t1
+  | TmLoc (_) -> true
   | t when isnumericval ctx t -> true
-  | TmAbs (_, _, _, _) -> true
-  | TmRecord (_, fields) -> List.for_all (fun (l, ti) -> isval ctx ti) fields
+  | TmAbs (_) -> true
+  | TmRecord (_, fields) -> List.forall (fun (_, ti) -> isval ctx ti) fields
   | TmPack (_, _, v1, _) when isval ctx v1 -> true
-  | TmTAbs (_, _, _, _) -> true
+  | TmTAbs (_) -> true
   | _ -> false
   
-exception ErrorEncountered
+exception ErrorEncounteredException
   
-type store = Term list
+type Store = Term list
 
 let emptystore = []
   
@@ -51,7 +50,7 @@ let lookuploc store l = List.item l store
 let updatestore store n v =
   let rec f s =
     match s with
-    | (0, v' :: rest) -> v :: rest
+    | (0, _ :: rest) -> v :: rest
     | (n, v' :: rest) -> v' :: (f ((n - 1), rest))
     | _ -> error dummyinfo "updatestore: bad index"
   in f (n, store)
@@ -60,22 +59,22 @@ let shiftstore i store = List.map (fun t -> termShift i t) store
   
 let rec eval1 ctx store t =
   match t with
-  | TmIf (_, (TmTrue _), t2, t3) -> (t2, store)
-  | TmIf (_, (TmFalse _), t2, t3) -> (t3, store)
-  | TmLet (fi, x, v1, t2) when isval ctx v1 -> ((termSubstTop v1 t2), store)
+  | TmIf (_, (TmTrue _), t2, _) -> (t2, store)
+  | TmIf (_, (TmFalse _), _, t3) -> (t3, store)
+  | TmLet (_, _, v1, t2) when isval ctx v1 -> ((termSubstTop v1 t2), store)
   | TmLet (fi, x, t1, t2) ->
       let (t1', store') = eval1 ctx store t1
       in ((TmLet (fi, x, t1', t2)), store')
-  | (TmFix (fi, v1) as t) when isval ctx v1 ->
+  | (TmFix (_, v1) as t) when isval ctx v1 ->
       (match v1 with
        | TmAbs (_, _, _, t12) -> ((termSubstTop t t12), store)
-       | _ -> raise NoRuleApplies)
+       | _ -> raise Common.NoRuleAppliesException)
   | TmFix (fi, t1) ->
       let (t1', store') = eval1 ctx store t1 in ((TmFix (fi, t1')), store')
   | TmRecord (fi, fields) ->
       let rec evalafield l =
         (match l with
-         | [] -> raise NoRuleApplies
+         | [] -> raise Common.NoRuleAppliesException
          | (l, vi) :: rest when isval ctx vi ->
              let (rest', store') = evalafield rest
              in (((l, vi) :: rest'), store')
@@ -84,31 +83,31 @@ let rec eval1 ctx store t =
              in (((l, ti') :: rest), store')) in
       let (fields', store') = evalafield fields
       in ((TmRecord (fi, fields')), store')
-  | TmProj (fi, ((TmRecord (_, fields) as v1)), l) when isval ctx v1 ->
-      (try ((List.assoc l fields), store)
-       with | Not_found -> raise NoRuleApplies)
+  | TmProj (_, ((TmRecord (_, fields) as v1)), l) when isval ctx v1 ->
+        match List.assoc l fields with
+        | Some x -> (x, store)
+        | None -> raise Common.NoRuleAppliesException
   | TmProj (fi, t1, l) ->
       let (t1', store') = eval1 ctx store t1
       in ((TmProj (fi, t1', l)), store')
   | TmTag (fi, l, t1, tyT) ->
       let (t1', store') = eval1 ctx store t1
       in ((TmTag (fi, l, t1', tyT)), store')
-  | TmCase (fi, (TmTag (_, li, v11, _)), branches) when isval ctx v11 ->
-      (try
-         let (x, body) = List.assoc li branches
-         in ((termSubstTop v11 body), store)
-       with | Not_found -> raise NoRuleApplies)
+  | TmCase (_, (TmTag (_, li, v11, _)), branches) when isval ctx v11 ->
+        match List.assoc li branches with
+        |Some (_, body) -> ((termSubstTop v11 body), store)
+        | None -> raise Common.NoRuleAppliesException
   | TmCase (fi, t1, branches) ->
       let (t1', store') = eval1 ctx store t1
       in ((TmCase (fi, t1', branches)), store')
-  | TmAscribe (fi, v1, tyT) when isval ctx v1 -> (v1, store)
+  | TmAscribe (_, v1, _) when isval ctx v1 -> (v1, store)
   | TmAscribe (fi, t1, tyT) ->
       let (t1', store') = eval1 ctx store t1
       in ((TmAscribe (fi, t1', tyT)), store')
   | TmVar (fi, n, _) ->
       (match getbinding fi ctx n with
        | TmAbbBind (t, _) -> (t, store)
-       | _ -> raise NoRuleApplies)
+       | _ -> raise Common.NoRuleAppliesException)
   | TmRef (fi, t1) ->
       if not (isval ctx t1)
       then
@@ -125,7 +124,7 @@ let rec eval1 ctx store t =
       else
         (match t1 with
          | TmLoc (_, l) -> ((lookuploc store l), store)
-         | _ -> raise NoRuleApplies)
+         | _ -> raise Common.NoRuleAppliesException)
   | TmAssign (fi, t1, t2) ->
       if not (isval ctx t1)
       then
@@ -139,11 +138,11 @@ let rec eval1 ctx store t =
         else
           (match t1 with
            | TmLoc (_, l) -> ((TmUnit dummyinfo), (updatestore store l t2))
-           | _ -> raise NoRuleApplies)
-  | TmError fi -> raise ErrorEncountered
+           | _ -> raise Common.NoRuleAppliesException)
+  | TmError _ -> raise ErrorEncounteredException
   | TmTimesfloat (fi, (TmFloat (_, f1)), (TmFloat (_, f2))) ->
-      ((TmFloat (fi, f1 *. f2)), store)
-  | TmTimesfloat (fi, ((TmFloat (_, f1) as t1)), t2) ->
+      ((TmFloat (fi, f1 * f2)), store)
+  | TmTimesfloat (fi, ((TmFloat (_) as t1)), t2) ->
       let (t2', store') = eval1 ctx store t2
       in ((TmTimesfloat (fi, t1, t2')), store')
   | TmTimesfloat (fi, t1, t2) ->
@@ -161,12 +160,12 @@ let rec eval1 ctx store t =
   | TmIsZero (fi, t1) ->
       let (t1', store') = eval1 ctx store t1
       in ((TmIsZero (fi, t1')), store')
-  | TmTApp (fi, (TmTAbs (_, x, _, t11)), tyT2) ->
+  | TmTApp (_, (TmTAbs (_, _, _, t11)), tyT2) ->
       ((tytermSubstTop tyT2 t11), store)
   | TmTApp (fi, t1, tyT2) ->
       let (t1', store') = eval1 ctx store t1
       in ((TmTApp (fi, t1', tyT2)), store')
-  | TmApp (fi, (TmAbs (_, x, tyT11, t12)), v2) when isval ctx v2 ->
+  | TmApp (_, (TmAbs (_, _, _, t12)), v2) when isval ctx v2 ->
       ((termSubstTop v2 t12), store)
   | TmApp (fi, v1, t2) when isval ctx v1 ->
       let (t2', store') = eval1 ctx store t2
@@ -177,7 +176,7 @@ let rec eval1 ctx store t =
   | TmIf (fi, t1, t2, t3) ->
       let (t1', store') = eval1 ctx store t1
       in ((TmIf (fi, t1', t2, t3)), store')
-  | TmUnpack (fi, _, _, (TmPack (_, tyT11, v12, _)), t2) when isval ctx v12
+  | TmUnpack (_, _, _, (TmPack (_, tyT11, v12, _)), t2) when isval ctx v12
       -> ((tytermSubstTop tyT11 (termSubstTop (termShift 1 v12) t2)), store)
   | TmUnpack (fi, tyX, x, t1, t2) ->
       let (t1', store') = eval1 ctx store t1
@@ -185,33 +184,33 @@ let rec eval1 ctx store t =
   | TmPack (fi, tyT1, t2, tyT3) ->
       let (t2', store') = eval1 ctx store t2
       in ((TmPack (fi, tyT1, t2', tyT3)), store')
-  | _ -> raise NoRuleApplies
+  | _ -> raise Common.NoRuleAppliesException
   
 let rec eval ctx store t =
     try let (t', store') = eval1 ctx store t
         eval ctx store' t'
     with
-    | NoRuleApplies ->
+    | Common.NoRuleAppliesException ->
         (t, store)
-    | ErrorEncountered ->
+    | ErrorEncounteredException ->
         (TmError dummyinfo), store
   
 (* ------------------------   KINDING  ------------------------ *)
 let istyabb ctx i =
   match getbinding dummyinfo ctx i with
-  | TyAbbBind (tyT, _) -> true
+  | TyAbbBind (_) -> true
   | _ -> false
   
 let gettyabb ctx i =
   match getbinding dummyinfo ctx i with
   | TyAbbBind (tyT, _) -> tyT
-  | _ -> raise NoRuleApplies
+  | _ -> raise Common.NoRuleAppliesException
   
 let rec computety ctx tyT =
   match tyT with
   | TyVar (i, _) when istyabb ctx i -> gettyabb ctx i
   | TyApp ((TyAbs (_, _, tyT12)), tyT2) -> typeSubstTop tyT2 tyT12
-  | _ -> raise NoRuleApplies
+  | _ -> raise Common.NoRuleAppliesException
   
 let rec simplifyty ctx tyT =
   let tyT =
@@ -220,7 +219,7 @@ let rec simplifyty ctx tyT =
     | tyT -> tyT
   in
     try let tyT' = computety ctx tyT in simplifyty ctx tyT'
-    with | NoRuleApplies -> tyT
+    with | Common.NoRuleAppliesException -> tyT
   
 let rec tyeqv ctx tyS tyT =
   let tyS = simplifyty ctx tyS in
@@ -241,19 +240,19 @@ let rec tyeqv ctx tyS tyT =
     | (TyNat, TyNat) -> true
     | (TyRecord fields1, TyRecord fields2) ->
         ((List.length fields1) = (List.length fields2)) &&
-          (List.for_all
+          (List.forall
              (fun (li2, tyTi2) ->
-                try
-                  let tyTi1 = List.assoc li2 fields1 in tyeqv ctx tyTi1 tyTi2
-                with | Not_found -> false)
+                    match List.assoc li2 fields1 with
+                    | Some tyTi1 -> tyeqv ctx tyTi1 tyTi2
+                    | None -> false)
              fields2)
     | (TyVariant fields1, TyVariant fields2) ->
         ((List.length fields1) = (List.length fields2)) &&
-          (List.for_all
+          (List.forall
              (fun (li2, tyTi2) ->
-                try
-                  let tyTi1 = List.assoc li2 fields1 in tyeqv ctx tyTi1 tyTi2
-                with | Not_found -> false)
+                    match List.assoc li2 fields1 with
+                    | Some tyTi1 -> tyeqv ctx tyTi1 tyTi2
+                    | None -> false)
              fields2)
     | (TyAll (tyX1, tyS1, tyS2), TyAll (_, tyT1, tyT2)) ->
         let ctx1 = addname ctx tyX1
@@ -285,7 +284,7 @@ and kindof ctx tyT =
   match tyT with
   | TyRecord fldtys ->
       (List.iter
-         (fun (l, tyS) ->
+         (fun (_, tyS) ->
             if (kindof ctx tyS) <> KnStar
             then error dummyinfo "Kind * expected"
             else ())
@@ -293,7 +292,7 @@ and kindof ctx tyT =
        KnStar)
   | TyVariant fldtys ->
       (List.iter
-         (fun (l, tyS) ->
+         (fun (_, tyS) ->
             if (kindof ctx tyS) <> KnStar
             then error dummyinfo "Kind * expected"
             else ())
@@ -362,9 +361,9 @@ let rec promote ctx t =
   | TyVar (i, _) ->
       (match getbinding dummyinfo ctx i with
        | TyVarBind tyT -> tyT
-       | _ -> raise NoRuleApplies)
+       | _ -> raise Common.NoRuleAppliesException)
   | TyApp (tyS, tyT) -> TyApp (promote ctx tyS, tyT)
-  | _ -> raise NoRuleApplies
+  | _ -> raise Common.NoRuleAppliesException
   
 let rec subtype ctx tyS tyT =
   (tyeqv ctx tyS tyT) ||
@@ -377,18 +376,20 @@ let rec subtype ctx tyS tyT =
        | (TyArr (tyS1, tyS2), TyArr (tyT1, tyT2)) ->
            (subtype ctx tyT1 tyS1) && (subtype ctx tyS2 tyT2)
        | (TyRecord fS, TyRecord fT) ->
-           List.for_all
+           List.forall
              (fun (li, tyTi) ->
-                try let tySi = List.assoc li fS in subtype ctx tySi tyTi
-                with | Not_found -> false)
+                 match List.assoc li fS with
+                 | Some tySi -> subtype ctx tySi tyTi
+                 | None -> false)
              fT
        | (TyVariant fS, TyVariant fT) ->
-           List.for_all
+           List.forall
              (fun (li, tySi) ->
-                try let tyTi = List.assoc li fT in subtype ctx tySi tyTi
-                with | Not_found -> false)
+                match List.assoc li fT with
+                | Some tyTi -> subtype ctx tySi tyTi
+                | None -> false)
              fS
-       | (TyVar (_, _), _) -> subtype ctx (promote ctx tyS) tyT
+       | (TyVar (_), _) -> subtype ctx (promote ctx tyS) tyT
        | (TyAll (tyX1, tyS1, tyS2), TyAll (_, tyT1, tyT2)) ->
            ((subtype ctx tyS1 tyT1) && (subtype ctx tyT1 tyS1)) &&
              (let ctx1 = addbinding ctx tyX1 (TyVarBind tyT1)
@@ -397,7 +398,7 @@ let rec subtype ctx tyS tyT =
            (knKS1 = knKT1) &&
              (let ctx = addbinding ctx tyX (TyVarBind (maketop knKS1))
               in subtype ctx tyS2 tyT2)
-       | (TyApp (_, _), _) -> subtype ctx (promote ctx tyS) tyT
+       | (TyApp (_), _) -> subtype ctx (promote ctx tyS) tyT
        | (TySome (tyX1, tyS1, tyS2), TySome (_, tyT1, tyT2)) ->
            ((subtype ctx tyS1 tyT1) && (subtype ctx tyT1 tyS1)) &&
              (let ctx1 = addbinding ctx tyX1 (TyVarBind tyT1)
@@ -408,7 +409,7 @@ let rec subtype ctx tyS tyT =
        | (TySource tyT1, TySource tyT2) -> subtype ctx tyT1 tyT2
        | (TyRef tyT1, TySink tyT2) -> subtype ctx tyT2 tyT1
        | (TySink tyT1, TySink tyT2) -> subtype ctx tyT2 tyT1
-       | (_, _) -> false)
+       | (_) -> false)
   
 let rec join ctx tyS tyT =
   if subtype ctx tyS tyT
@@ -425,15 +426,20 @@ let rec join ctx tyS tyT =
              let labelsS = List.map (fun (li, _) -> li) fS in
              let labelsT = List.map (fun (li, _) -> li) fT in
              let commonLabels =
-               List.find_all (fun l -> List.mem l labelsT) labelsS in
+               List.filter (fun l -> List.exists (fun x -> x = l) labelsT) labelsS in
              let commonFields =
                List.map
                  (fun li ->
-                    let tySi = List.assoc li fS in
-                    let tyTi = List.assoc li fT in (li, (join ctx tySi tyTi)))
+                    let tySi = 
+                        match List.assoc li fS with
+                        | Some x -> x
+                        | None -> raise Common.NotFoundException
+                    match List.assoc li fT with
+                    | Some tyTi -> (li, (join ctx tySi tyTi))
+                    | None -> raise Common.NotFoundException)
                  commonLabels
              in TyRecord commonFields
-         | (TyAll (tyX, tyS1, tyS2), TyAll (_, tyT1, tyT2)) ->
+         | (TyAll (tyX, tyS1, _), TyAll (_, tyT1, tyT2)) ->
              if not ((subtype ctx tyS1 tyT1) && (subtype ctx tyT1 tyS1))
              then TyTop
              else
@@ -469,24 +475,32 @@ and meet ctx tyS tyT =
              let labelsT = List.map (fun (li, _) -> li) fT in
              let allLabels =
                List.append labelsS
-                 (List.find_all (fun l -> not (List.mem l labelsS)) labelsT) in
+                 (List.filter (fun l -> not (List.exists (fun x -> x = l) labelsS)) labelsT) in
              let allFields =
                List.map
                  (fun li ->
-                    if List.mem li allLabels
+                    if List.exists (fun x -> x = li) allLabels
                     then
-                      (let tySi = List.assoc li fS in
-                       let tyTi = List.assoc li fT
-                       in (li, (meet ctx tySi tyTi)))
+                      (let tySi = 
+                        match List.assoc li fS with
+                        | Some x -> x
+                        | None -> raise Common.NotFoundException
+                       match List.assoc li fT with
+                       | Some tyTi -> (li, (meet ctx tySi tyTi))
+                       | None -> raise Common.NotFoundException)
                     else
-                      if List.mem li labelsS
-                      then (li, (List.assoc li fS))
-                      else (li, (List.assoc li fT)))
+                      if List.exists (fun x -> x = li) labelsS
+                      then (li, (match List.assoc li fS with
+                                    | Some x -> x
+                                    | None -> raise Common.NotFoundException))
+                      else (li, (match List.assoc li fT with
+                                    | Some x -> x
+                                    | None -> raise Common.NotFoundException)))
                  allLabels
              in TyRecord allFields
-         | (TyAll (tyX, tyS1, tyS2), TyAll (_, tyT1, tyT2)) ->
+         | (TyAll (tyX, tyS1, _), TyAll (_, tyT1, tyT2)) ->
              if not ((subtype ctx tyS1 tyT1) && (subtype ctx tyT1 tyS1))
-             then raise Not_found
+             then raise Common.NotFoundException
              else
                (let ctx' = addbinding ctx tyX (TyVarBind tyT1)
                 in TyAll (tyX, tyS1, meet ctx' tyT1 tyT2))
@@ -508,7 +522,7 @@ and meet ctx tyS tyT =
 (* ------------------------   TYPING  ------------------------ *)
 let rec lcst ctx tyS =
   let tyS = simplifyty ctx tyS
-  in try lcst ctx (promote ctx tyS) with | NoRuleApplies -> tyS
+  in try lcst ctx (promote ctx tyS) with | Common.NoRuleAppliesException -> tyS
   
 let rec typeof ctx t =
   match t with
@@ -528,23 +542,24 @@ let rec typeof ctx t =
              else error fi "parameter type mismatch"
          | TyBot -> TyBot
          | _ -> error fi "arrow type expected")
-  | TmTrue fi -> TyBool
-  | TmFalse fi -> TyBool
+  | TmTrue _ -> TyBool
+  | TmFalse _ -> TyBool
   | TmIf (fi, t1, t2, t3) ->
       if subtype ctx (typeof ctx t1) TyBool
       then join ctx (typeof ctx t2) (typeof ctx t3)
       else error fi "guard of conditional not a boolean"
-  | TmRecord (fi, fields) ->
+  | TmRecord (_, fields) ->
       let fieldtys = List.map (fun (li, ti) -> (li, (typeof ctx ti))) fields
       in TyRecord fieldtys
   | TmProj (fi, t1, l) ->
       (match lcst ctx (typeof ctx t1) with
        | TyRecord fieldtys ->
-           (try List.assoc l fieldtys
-            with | Not_found -> error fi ("label " ^ (l ^ " not found")))
+            match List.assoc l fieldtys with
+            | Some x -> x
+            | None -> error fi ("label " ^ (l ^ " not found"))
        | TyBot -> TyBot
        | _ -> error fi "Expected record type")
-  | TmLet (fi, x, t1, t2) ->
+  | TmLet (_, x, t1, t2) ->
       let tyT1 = typeof ctx t1 in
       let ctx' = addbinding ctx x (VarBind tyT1)
       in typeShift (-1) (typeof ctx' t2)
@@ -559,20 +574,19 @@ let rec typeof ctx t =
       (match lcst ctx (typeof ctx t) with
        | TyVariant fieldtys ->
            (List.iter
-              (fun (li, (xi, ti)) ->
-                 try let _ = List.assoc li fieldtys in ()
-                 with
-                 | Not_found -> error fi ("label " ^ (li ^ " not in type")))
+              (fun (li, (_)) ->
+                match List.assoc li fieldtys with
+                | Some _ -> ()
+                | None -> error fi ("label " ^ (li ^ " not in type")))
               cases;
             let casetypes =
               List.map
                 (fun (li, (xi, ti)) ->
-                   let tyTi =
-                     try List.assoc li fieldtys
-                     with
-                     | Not_found -> error fi ("label " ^ (li ^ " not found")) in
-                   let ctx' = addbinding ctx xi (VarBind tyTi)
-                   in typeShift (-1) (typeof ctx' ti))
+                    match List.assoc li fieldtys with
+                    | Some tyTi ->
+                       let ctx' = addbinding ctx xi (VarBind tyTi)
+                       typeShift (-1) (typeof ctx' ti)
+                    | None -> error fi ("label " ^ (li ^ " not found")))
                 cases
             in List.fold (join ctx) TyBot casetypes)
        | TyBot -> TyBot
@@ -580,14 +594,13 @@ let rec typeof ctx t =
   | TmTag (fi, li, ti, tyT) ->
       (match simplifyty ctx tyT with
        | TyVariant fieldtys ->
-           (try
-              let tyTiExpected = List.assoc li fieldtys in
-              let tyTi = typeof ctx ti
-              in
+            match List.assoc li fieldtys with
+            | Some tyTiExpected ->
+                let tyTi = typeof ctx ti
                 if subtype ctx tyTi tyTiExpected
                 then tyT
                 else error fi "field does not have expected type"
-            with | Not_found -> error fi ("label " ^ (li ^ " not found")))
+            | None -> error fi ("label " ^ (li ^ " not found"))
        | _ -> error fi "Annotation is not a variant type")
   | TmAscribe (fi, t1, tyT) ->
       (checkkindstar fi ctx tyT;
@@ -595,8 +608,8 @@ let rec typeof ctx t =
        then tyT
        else error fi "body of as-term does not have the expected type")
   | TmString _ -> TyString
-  | TmUnit fi -> TyUnit
-  | TmInert (fi, tyT) -> tyT
+  | TmUnit _ -> TyUnit
+  | TmInert (_, tyT) -> tyT
   | TmFix (fi, t1) ->
       let tyT1 = typeof ctx t1
       in
@@ -607,8 +620,8 @@ let rec typeof ctx t =
              else error fi "result of body not compatible with domain"
          | TyBot -> TyBot
          | _ -> error fi "arrow type expected")
-  | TmRef (fi, t1) -> TyRef (typeof ctx t1)
-  | TmLoc (fi, l) ->
+  | TmRef (_, t1) -> TyRef (typeof ctx t1)
+  | TmLoc (fi, _) ->
       error fi "locations are not supposed to occur in source programs!"
   | TmDeref (fi, t1) ->
       (match lcst ctx (typeof ctx t1) with
@@ -628,8 +641,8 @@ let rec typeof ctx t =
            then TyUnit
            else error fi "arguments of := are incompatible"
        | _ -> error fi "argument of ! is not a Ref or Sink")
-  | TmError fi -> TyBot
-  | TmTAbs (fi, tyX, tyT1, t2) ->
+  | TmError _ -> TyBot
+  | TmTAbs (_, tyX, tyT1, t2) ->
       let ctx = addbinding ctx tyX (TyVarBind tyT1) in
       let tyT2 = typeof ctx t2 in TyAll (tyX, tyT1, tyT2)
   | TmTApp (fi, t1, tyT2) ->
@@ -642,8 +655,8 @@ let rec typeof ctx t =
               else ();
               typeSubstTop tyT2 tyT12)
          | _ -> error fi "universal type expected")
-  | TmTry (fi, t1, t2) -> join ctx (typeof ctx t1) (typeof ctx t2)
-  | TmZero fi -> TyNat
+  | TmTry (_, t1, t2) -> join ctx (typeof ctx t1) (typeof ctx t2)
+  | TmZero _ -> TyNat
   | TmSucc (fi, t1) ->
       if subtype ctx (typeof ctx t1) TyNat
       then TyNat
@@ -659,7 +672,7 @@ let rec typeof ctx t =
   | TmPack (fi, tyT1, t2, tyT) ->
       (checkkindstar fi ctx tyT;
        (match simplifyty ctx tyT with
-        | TySome (tyY, tyBound, tyT2) ->
+        | TySome (_, tyBound, tyT2) ->
             (if not (subtype ctx tyT1 tyBound)
              then error fi "hidden type not a subtype of bound"
              else ();
@@ -674,7 +687,7 @@ let rec typeof ctx t =
       let tyT1 = typeof ctx t1
       in
         (match lcst ctx tyT1 with
-         | TySome (tyY, tyBound, tyT11) ->
+         | TySome (_, tyBound, tyT11) ->
              let ctx' = addbinding ctx tyX (TyVarBind tyBound) in
              let ctx'' = addbinding ctx' x (VarBind tyT11) in
              let tyT2 = typeof ctx'' t2 in typeShift (-2) tyT2

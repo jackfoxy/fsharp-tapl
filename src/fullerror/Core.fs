@@ -10,40 +10,38 @@ See LICENSE.TXT for licensing details.
 /// Core typechecking and evaluation functions.
 module Core
 
-open FSharp.Compatibility.OCaml
 open Ast
+open TaplCommon
 
 (* ------------------------   EVALUATION  ------------------------ *)
-let rec isval ctx t =
+let rec isval _ t =
   match t with
   | TmTrue _ -> true
   | TmFalse _ -> true
-  | TmAbs (_, _, _, _) -> true
+  | TmAbs (_) -> true
   | _ -> false
-  
-exception NoRuleApplies
   
 let rec eval1 ctx t =
   match t with
-  | TmIf (_, (TmTrue _), t2, t3) -> t2
-  | TmIf (_, (TmFalse _), t2, t3) -> t3
+  | TmIf (_, (TmTrue _), t2,_) -> t2
+  | TmIf (_, (TmFalse _), _, t3) -> t3
   | TmVar (fi, n, _) ->
       (match getbinding fi ctx n with
        | TmAbbBind (t, _) -> t
-       | _ -> raise NoRuleApplies)
-  | TmApp (_, (TmError fi), t2) -> TmError fi
+       | _ -> raise Common.NoRuleAppliesException)
+  | TmApp (_, (TmError fi), _) -> TmError fi
   | TmApp (_, v1, (TmError fi)) when isval ctx v1 -> TmError fi
-  | TmApp (fi, (TmAbs (_, x, tyT11, t12)), v2) when isval ctx v2 ->
+  | TmApp (_, (TmAbs (_, _, _, t12)), v2) when isval ctx v2 ->
       termSubstTop v2 t12
   | TmApp (fi, v1, t2) when isval ctx v1 ->
       let t2' = eval1 ctx t2 in TmApp (fi, v1, t2')
   | TmApp (fi, t1, t2) -> let t1' = eval1 ctx t1 in TmApp (fi, t1', t2)
-  | TmIf (_, (TmError fi), t2, t3) -> TmError fi
+  | TmIf (_, (TmError fi), _, _) -> TmError fi
   | TmIf (fi, t1, t2, t3) -> let t1' = eval1 ctx t1 in TmIf (fi, t1', t2, t3)
-  | _ -> raise NoRuleApplies
+  | _ -> raise Common.NoRuleAppliesException
   
 let rec eval ctx t =
-  try let t' = eval1 ctx t in eval ctx t' with | NoRuleApplies -> t
+  try let t' = eval1 ctx t in eval ctx t' with | Common.NoRuleAppliesException -> t
   
 (* ------------------------   SUBTYPING  ------------------------ *)
 let evalbinding ctx b =
@@ -52,21 +50,21 @@ let evalbinding ctx b =
   | bind -> bind
   
 let istyabb ctx i =
-  match getbinding dummyinfo ctx i with | TyAbbBind tyT -> true | _ -> false
+  match getbinding dummyinfo ctx i with | TyAbbBind _ -> true | _ -> false
   
 let gettyabb ctx i =
   match getbinding dummyinfo ctx i with
   | TyAbbBind tyT -> tyT
-  | _ -> raise NoRuleApplies
+  | _ -> raise Common.NoRuleAppliesException
   
 let rec computety ctx tyT =
   match tyT with
   | TyVar (i, _) when istyabb ctx i -> gettyabb ctx i
-  | _ -> raise NoRuleApplies
+  | _ -> raise Common.NoRuleAppliesException
   
 let rec simplifyty ctx tyT =
   try let tyT' = computety ctx tyT in simplifyty ctx tyT'
-  with | NoRuleApplies -> tyT
+  with | Common.NoRuleAppliesException -> tyT
   
 let rec tyeqv ctx tyS tyT =
   let tyS = simplifyty ctx tyS in
@@ -93,7 +91,7 @@ let rec subtype ctx tyS tyT =
        | (TyBot, _) -> true
        | (TyArr (tyS1, tyS2), TyArr (tyT1, tyT2)) ->
            (subtype ctx tyT1 tyS1) && (subtype ctx tyS2 tyT2)
-       | (_, _) -> false)
+       | (_) -> false)
   
 let rec join ctx tyS tyT =
   if subtype ctx tyS tyT
@@ -128,7 +126,7 @@ and meet ctx tyS tyT =
 let rec typeof ctx t =
   match t with
   | TmVar (fi, i, _) -> getTypeFromContext fi ctx i
-  | TmAbs (fi, x, tyT1, t2) ->
+  | TmAbs (_, x, tyT1, t2) ->
       let ctx' = addbinding ctx x (VarBind tyT1) in
       let tyT2 = typeof ctx' t2 in TyArr (tyT1, typeShift (-1) tyT2)
   | TmApp (fi, t1, t2) ->
@@ -142,13 +140,13 @@ let rec typeof ctx t =
              else error fi "parameter type mismatch"
          | TyBot -> TyBot
          | _ -> error fi "arrow type expected")
-  | TmTrue fi -> TyBool
-  | TmFalse fi -> TyBool
+  | TmTrue _ -> TyBool
+  | TmFalse _ -> TyBool
   | TmIf (fi, t1, t2, t3) ->
       if subtype ctx (typeof ctx t1) TyBool
       then join ctx (typeof ctx t2) (typeof ctx t3)
       else error fi "guard of conditional not a boolean"
-  | TmError fi -> TyBot
-  | TmTry (fi, t1, t2) -> join ctx (typeof ctx t1) (typeof ctx t2)
+  | TmError _ -> TyBot
+  | TmTry (_, t1, t2) -> join ctx (typeof ctx t1) (typeof ctx t2)
   
 

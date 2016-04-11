@@ -10,21 +10,17 @@ See LICENSE.TXT for licensing details.
 /// Core typechecking and evaluation functions.
 module Core
 
-open FSharp.Compatibility.OCaml
 open Ast
-
-
+open TaplCommon
 (* ------------------------   EVALUATION  ------------------------ *)
-let rec isval ctx t =
+let rec isval _ t =
     match t with
-    | TmAbs (_,_,_,_) -> true
+    | TmAbs (_) -> true
     | _ -> false
-  
-exception NoRuleApplies
   
 let rec eval1 ctx t =
   match t with
-  | TmApp (fi, (TmAbs (_, x, tyT11, t12)), v2) when isval ctx v2 ->
+  | TmApp (_, (TmAbs (_, _, _, t12)), v2) when isval ctx v2 ->
       termSubstTop v2 t12
   | TmApp (fi, v1, t2) when isval ctx v1 ->
       let t2' = eval1 ctx t2
@@ -33,12 +29,12 @@ let rec eval1 ctx t =
     let t1' = eval1 ctx t1
     TmApp (fi, t1', t2)
   | _ ->
-    raise NoRuleApplies
+    raise Common.NoRuleAppliesException
   
 let rec eval ctx t =
     try let t' = eval1 ctx t
         eval ctx t'
-    with NoRuleApplies -> t
+    with Common.NoRuleAppliesException -> t
   
 (* ------------------------   SUBTYPING  ------------------------ *)
 let rec subtype tyS tyT =
@@ -48,14 +44,14 @@ let rec subtype tyS tyT =
      | (TyBot, _) -> true
      | (TyArr (tyS1, tyS2), TyArr (tyT1, tyT2)) ->
          (subtype tyT1 tyS1) && (subtype tyS2 tyT2)
-     | (_, _) -> false)
+     | (_) -> false)
   
 (* ------------------------   TYPING  ------------------------ *)
 let rec typeof ctx t =
   match t with
   | TmVar (fi, i, _) ->
     getTypeFromContext fi ctx i
-  | TmAbs (fi, x, tyT1, t2) ->
+  | TmAbs (_, x, tyT1, t2) ->
       let ctx' = addbinding ctx x (VarBind tyT1) in
       let tyT2 = typeof ctx' t2 in TyArr (tyT1, tyT2)
   | TmApp (fi, t1, t2) ->

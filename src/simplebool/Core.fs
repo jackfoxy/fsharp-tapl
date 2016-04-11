@@ -10,39 +10,37 @@ See LICENSE.TXT for licensing details.
 /// Core typechecking and evaluation functions.
 module Core
 
-open FSharp.Compatibility.OCaml
 open Ast
+open TaplCommon
 
 (* ------------------------   EVALUATION  ------------------------ *)
-let rec isval ctx t =
+let rec isval _ t =
   match t with
   | TmTrue _ -> true
   | TmFalse _ -> true
-  | TmAbs (_, _, _, _) -> true
+  | TmAbs (_) -> true
   | _ -> false
-  
-exception NoRuleApplies
   
 let rec eval1 ctx t =
   match t with
-  | TmApp (fi, (TmAbs (_, x, tyT11, t12)), v2) when isval ctx v2 ->
+  | TmApp (_, (TmAbs (_, _, _, t12)), v2) when isval ctx v2 ->
       termSubstTop v2 t12
   | TmApp (fi, v1, t2) when isval ctx v1 ->
       let t2' = eval1 ctx t2 in TmApp (fi, v1, t2')
   | TmApp (fi, t1, t2) -> let t1' = eval1 ctx t1 in TmApp (fi, t1', t2)
-  | TmIf (_, (TmTrue _), t2, t3) -> t2
-  | TmIf (_, (TmFalse _), t2, t3) -> t3
+  | TmIf (_, (TmTrue _), t2,_) -> t2
+  | TmIf (_, (TmFalse _), _, t3) -> t3
   | TmIf (fi, t1, t2, t3) -> let t1' = eval1 ctx t1 in TmIf (fi, t1', t2, t3)
-  | _ -> raise NoRuleApplies
+  | _ -> raise Common.NoRuleAppliesException
   
 let rec eval ctx t =
-  try let t' = eval1 ctx t in eval ctx t' with | NoRuleApplies -> t
+  try let t' = eval1 ctx t in eval ctx t' with | Common.NoRuleAppliesException -> t
   
 (* ------------------------   TYPING  ------------------------ *)
 let rec typeof ctx t =
   match t with
   | TmVar (fi, i, _) -> getTypeFromContext fi ctx i
-  | TmAbs (fi, x, tyT1, t2) ->
+  | TmAbs (_, x, tyT1, t2) ->
       let ctx' = addbinding ctx x (VarBind tyT1) in
       let tyT2 = typeof ctx' t2 in TyArr (tyT1, tyT2)
   | TmApp (fi, t1, t2) ->
@@ -55,8 +53,8 @@ let rec typeof ctx t =
              then tyT12
              else error fi "parameter type mismatch"
          | _ -> error fi "arrow type expected")
-  | TmTrue fi -> TyBool
-  | TmFalse fi -> TyBool
+  | TmTrue _ -> TyBool
+  | TmFalse _ -> TyBool
   | TmIf (fi, t1, t2, t3) ->
       if (typeof ctx t1) = TyBool
       then

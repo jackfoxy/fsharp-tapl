@@ -10,11 +10,10 @@ See LICENSE.TXT for licensing details.
 /// Core typechecking and evaluation functions.
 module Core
 
-open FSharp.Compatibility.OCaml
 open Ast
+open TaplCommon
 
 (* ------------------------   EVALUATION  ------------------------ *)
-exception NoRuleApplies
   
 let rec isnumericval ctx t =
   match t with
@@ -27,13 +26,13 @@ let rec isval ctx t =
   | TmTrue _ -> true
   | TmFalse _ -> true
   | t when isnumericval ctx t -> true
-  | TmAbs (_, _, _, _) -> true
+  | TmAbs (_) -> true
   | _ -> false
   
 let rec eval1 ctx t =
   match t with
-  | TmIf (_, (TmTrue _), t2, t3) -> t2
-  | TmIf (_, (TmFalse _), t2, t3) -> t3
+  | TmIf (_, (TmTrue _), t2,_) -> t2
+  | TmIf (_, (TmFalse _), _, t3) -> t3
   | TmIf (fi, t1, t2, t3) -> let t1' = eval1 ctx t1 in TmIf (fi, t1', t2, t3)
   | TmSucc (fi, t1) -> let t1' = eval1 ctx t1 in TmSucc (fi, t1')
   | TmPred (_, (TmZero _)) -> TmZero dummyinfo
@@ -43,18 +42,18 @@ let rec eval1 ctx t =
   | TmIsZero (_, (TmSucc (_, nv1))) when isnumericval ctx nv1 ->
       TmFalse dummyinfo
   | TmIsZero (fi, t1) -> let t1' = eval1 ctx t1 in TmIsZero (fi, t1')
-  | TmApp (fi, (TmAbs (_, x, tyT11, t12)), v2) when isval ctx v2 ->
+  | TmApp (_, (TmAbs (_, _, _, t12)), v2) when isval ctx v2 ->
       termSubstTop v2 t12
   | TmApp (fi, v1, t2) when isval ctx v1 ->
       let t2' = eval1 ctx t2 in TmApp (fi, v1, t2')
   | TmApp (fi, t1, t2) -> let t1' = eval1 ctx t1 in TmApp (fi, t1', t2)
-  | _ -> raise NoRuleApplies
+  | _ -> raise Common.NoRuleAppliesException
   
 let rec eval ctx t =
-  try let t' = eval1 ctx t in eval ctx t' with | NoRuleApplies -> t
+  try let t' = eval1 ctx t in eval ctx t' with | Common.NoRuleAppliesException -> t
   
 (* ------------------------   TYPING  ------------------------ *)
-type constr = (Ty * Ty) list
+type Constr = (Ty * Ty) list
 
 let emptyconstr = []
   
@@ -70,10 +69,10 @@ let prconstr constr =
     | c :: rest -> (pc c; pr ", "; f rest)
   in (pr "{"; f constr; pr "}")
   
-type nextuvar =
-  | NextUVar of string * uvargenerator
+type Nextuvar =
+  | NextUVar of string * UvarGenerator
 
-and uvargenerator = unit -> nextuvar
+and UvarGenerator = unit -> Nextuvar
 
 let uvargen =
     let rec f n () =
@@ -84,11 +83,11 @@ let rec recon ctx nextuvar t =
   match t with
   | TmVar (fi, i, _) ->
       let tyT = getTypeFromContext fi ctx i in (tyT, nextuvar, [])
-  | TmAbs (fi, x, tyT1, t2) ->
+  | TmAbs (_, x, tyT1, t2) ->
       let ctx' = addbinding ctx x (VarBind tyT1) in
       let (tyT2, nextuvar2, constr2) = recon ctx' nextuvar t2
       in ((TyArr (tyT1, tyT2)), nextuvar2, constr2)
-  | TmApp (fi, t1, t2) ->
+  | TmApp (_, t1, t2) ->
       let (tyT1, nextuvar1, constr1) = recon ctx nextuvar t1 in
       let (tyT2, nextuvar2, constr2) = recon ctx nextuvar1 t2 in
       let (NextUVar (tyX, nextuvar')) = nextuvar2 () in
@@ -96,19 +95,19 @@ let rec recon ctx nextuvar t =
       in
         ((TyId tyX), nextuvar',
          (List.concat [ newconstr; constr1; constr2 ]))
-  | TmZero fi -> (TyNat, nextuvar, [])
-  | TmSucc (fi, t1) ->
+  | TmZero _ -> (TyNat, nextuvar, [])
+  | TmSucc (_, t1) ->
       let (tyT1, nextuvar1, constr1) = recon ctx nextuvar t1
       in (TyNat, nextuvar1, ((tyT1, TyNat) :: constr1))
-  | TmPred (fi, t1) ->
+  | TmPred (_, t1) ->
       let (tyT1, nextuvar1, constr1) = recon ctx nextuvar t1
       in (TyNat, nextuvar1, ((tyT1, TyNat) :: constr1))
-  | TmIsZero (fi, t1) ->
+  | TmIsZero (_, t1) ->
       let (tyT1, nextuvar1, constr1) = recon ctx nextuvar t1
       in (TyBool, nextuvar1, ((tyT1, TyNat) :: constr1))
-  | TmTrue fi -> (TyBool, nextuvar, [])
-  | TmFalse fi -> (TyBool, nextuvar, [])
-  | TmIf (fi, t1, t2, t3) ->
+  | TmTrue _ -> (TyBool, nextuvar, [])
+  | TmFalse _ -> (TyBool, nextuvar, [])
+  | TmIf (_, t1, t2, t3) ->
       let (tyT1, nextuvar1, constr1) = recon ctx nextuvar t1 in
       let (tyT2, nextuvar2, constr2) = recon ctx nextuvar1 t2 in
       let (tyT3, nextuvar3, constr3) = recon ctx nextuvar2 t3 in
@@ -145,7 +144,7 @@ let occursin tyX tyT =
     | TyId s -> s = tyX
   in o tyT
   
-let unify fi ctx msg constr =
+let unify fi _ msg constr =
   let rec u constr =
     match constr with
     | [] -> []
@@ -171,7 +170,7 @@ let unify fi ctx msg constr =
     | (TyBool, TyBool) :: rest -> u rest
     | (TyArr (tyS1, tyS2), TyArr (tyT1, tyT2)) :: rest ->
         u ((tyS1, tyT1) :: (tyS2, tyT2) :: rest)
-    | (tyS, tyT) :: rest -> error fi "Unsolvable constraints"
+    | (_) :: _ -> error fi "Unsolvable constraints"
   in u constr
   
 

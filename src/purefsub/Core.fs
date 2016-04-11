@@ -10,31 +10,29 @@ See LICENSE.TXT for licensing details.
 /// Core typechecking and evaluation functions.
 module Core
 
-open FSharp.Compatibility.OCaml
 open Ast
+open TaplCommon
 
 (* ------------------------   EVALUATION  ------------------------ *)
-let rec isval ctx t =
+let rec isval _ t =
   match t with
-  | TmTAbs (_, _, _, _) -> true
-  | TmAbs (_, _, _, _) -> true
+  | TmTAbs (_) -> true
+  | TmAbs (_) -> true
   | _ -> false
-  
-exception NoRuleApplies
   
 let rec eval1 ctx t =
   match t with
-  | TmTApp (fi, (TmTAbs (_, x, _, t11)), tyT2) -> tytermSubstTop tyT2 t11
+  | TmTApp (_, (TmTAbs (_, _, _, t11)), tyT2) -> tytermSubstTop tyT2 t11
   | TmTApp (fi, t1, tyT2) -> let t1' = eval1 ctx t1 in TmTApp (fi, t1', tyT2)
-  | TmApp (fi, (TmAbs (_, x, tyT11, t12)), v2) when isval ctx v2 ->
+  | TmApp (_, (TmAbs (_, _, _, t12)), v2) when isval ctx v2 ->
       termSubstTop v2 t12
   | TmApp (fi, v1, t2) when isval ctx v1 ->
       let t2' = eval1 ctx t2 in TmApp (fi, v1, t2')
   | TmApp (fi, t1, t2) -> let t1' = eval1 ctx t1 in TmApp (fi, t1', t2)
-  | _ -> raise NoRuleApplies
+  | _ -> raise Common.NoRuleAppliesException
   
 let rec eval ctx t =
-  try let t' = eval1 ctx t in eval ctx t' with | NoRuleApplies -> t
+  try let t' = eval1 ctx t in eval ctx t' with | Common.NoRuleAppliesException -> t
   
 (* ------------------------   SUBTYPING  ------------------------ *)
 let promote ctx t =
@@ -42,13 +40,13 @@ let promote ctx t =
   | TyVar (i, _) ->
       (match getbinding dummyinfo ctx i with
        | TyVarBind tyT -> tyT
-       | _ -> raise NoRuleApplies)
-  | _ -> raise NoRuleApplies
+       | _ -> raise Common.NoRuleAppliesException)
+  | _ -> raise Common.NoRuleAppliesException
   
 let rec subtype ctx tyS tyT =
   (tyS = tyT) ||
     (match (tyS, tyT) with
-     | (TyVar (_, _), _) -> subtype ctx (promote ctx tyS) tyT
+     | (TyVar (_), _) -> subtype ctx (promote ctx tyS) tyT
      | (TyAll (tyX1, tyS1, tyS2), TyAll (_, tyT1, tyT2)) ->
          ((subtype ctx tyS1 tyT1) && (subtype ctx tyT1 tyS1)) &&
            (let ctx1 = addbinding ctx tyX1 (TyVarBind tyT1)
@@ -56,15 +54,15 @@ let rec subtype ctx tyS tyT =
      | (_, TyTop) -> true
      | (TyArr (tyS1, tyS2), TyArr (tyT1, tyT2)) ->
          (subtype ctx tyT1 tyS1) && (subtype ctx tyS2 tyT2)
-     | (_, _) -> false)
+     | (_) -> false)
   
 (* ------------------------   TYPING  ------------------------ *)
 let rec lcst ctx tyS =
-  try lcst ctx (promote ctx tyS) with | NoRuleApplies -> tyS
+  try lcst ctx (promote ctx tyS) with | Common.NoRuleAppliesException -> tyS
   
 let rec typeof ctx t =
   match t with
-  | TmTAbs (fi, tyX, tyT1, t2) ->
+  | TmTAbs (_, tyX, tyT1, t2) ->
       let ctx = addbinding ctx tyX (TyVarBind tyT1) in
       let tyT2 = typeof ctx t2 in TyAll (tyX, tyT1, tyT2)
   | TmTApp (fi, t1, tyT2) ->
@@ -78,7 +76,7 @@ let rec typeof ctx t =
               typeSubstTop tyT2 tyT12)
          | _ -> error fi "universal type expected")
   | TmVar (fi, i, _) -> getTypeFromContext fi ctx i
-  | TmAbs (fi, x, tyT1, t2) ->
+  | TmAbs (_, x, tyT1, t2) ->
       let ctx' = addbinding ctx x (VarBind tyT1) in
       let tyT2 = typeof ctx' t2 in TyArr (tyT1, typeShift (-1) tyT2)
   | TmApp (fi, t1, t2) ->

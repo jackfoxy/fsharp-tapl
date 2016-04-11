@@ -36,7 +36,9 @@ let parseFile (inFile : string) =
 let checkbinding fi ctx b =
   match b with
   | NameBind -> NameBind
-  | TyVarBind tyS -> (kindof ctx tyS; TyVarBind tyS)
+  | TyVarBind tyS -> 
+    kindof ctx tyS |> ignore
+    TyVarBind tyS
   | TyAbbBind (tyT, None) -> TyAbbBind (tyT, Some (kindof ctx tyT))
   | VarBind tyT -> VarBind tyT
   | TmAbbBind (t, None) -> TmAbbBind (t, Some (typeof ctx t))

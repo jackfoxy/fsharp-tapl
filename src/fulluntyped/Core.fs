@@ -10,11 +10,10 @@ See LICENSE.TXT for licensing details.
 /// Core typechecking and evaluation functions.
 module Core
 
-open FSharp.Compatibility.OCaml
 open Ast
+open TaplCommon
 
 (* ------------------------   EVALUATION  ------------------------ *)
-exception NoRuleApplies
   
 let rec isnumericval ctx t =
   match t with
@@ -30,19 +29,19 @@ let rec isval ctx t =
   | TmString _ -> true
   | t when isnumericval ctx t -> true
   | TmAbs (_) -> true
-  | TmRecord (_, fields) -> List.for_all (fun (l, ti) -> isval ctx ti) fields
+  | TmRecord (_, fields) -> List.forall (fun (_, ti) -> isval ctx ti) fields
   | _ -> false
   
 let rec eval1 ctx t =
   match t with
-  | TmIf (_, (TmTrue _), t2, t3) -> t2
-  | TmIf (_, (TmFalse _), t2, t3) -> t3
+  | TmIf (_, (TmTrue _), t2,_) -> t2
+  | TmIf (_, (TmFalse _), _, t3) -> t3
   | TmIf (fi, t1, t2, t3) -> let t1' = eval1 ctx t1 in TmIf (fi, t1', t2, t3)
   | TmVar (fi, n, _) ->
       (match getbinding fi ctx n with
        | TmAbbBind t -> t
-       | _ -> raise NoRuleApplies)
-  | TmApp (fi, (TmAbs (_, x, t12)), v2) when isval ctx v2 ->
+       | _ -> raise Common.NoRuleAppliesException)
+  | TmApp (_, (TmAbs (_, _, t12)), v2) when isval ctx v2 ->
       termSubstTop v2 t12
   | TmApp (fi, v1, t2) when isval ctx v1 ->
       let t2' = eval1 ctx t2 in TmApp (fi, v1, t2')
@@ -50,17 +49,19 @@ let rec eval1 ctx t =
   | TmRecord (fi, fields) ->
       let rec evalafield l =
         (match l with
-         | [] -> raise NoRuleApplies
+         | [] -> raise Common.NoRuleAppliesException
          | (l, vi) :: rest when isval ctx vi ->
              let rest' = evalafield rest in (l, vi) :: rest'
          | (l, ti) :: rest -> let ti' = eval1 ctx ti in (l, ti') :: rest) in
       let fields' = evalafield fields in TmRecord (fi, fields')
-  | TmProj (fi, ((TmRecord (_, fields) as v1)), l) when isval ctx v1 ->
-      (try List.assoc l fields with | Not_found -> raise NoRuleApplies)
+  | TmProj (_, ((TmRecord (_, fields) as v1)), l) when isval ctx v1 ->
+      match List.assoc l fields with 
+      | Some x -> x
+      | None -> raise Common.NoRuleAppliesException
   | TmProj (fi, t1, l) -> let t1' = eval1 ctx t1 in TmProj (fi, t1', l)
   | TmTimesfloat (fi, (TmFloat (_, f1)), (TmFloat (_, f2))) ->
-      TmFloat (fi, f1 *. f2)
-  | TmTimesfloat (fi, ((TmFloat (_, f1) as t1)), t2) ->
+      TmFloat (fi, f1 * f2)
+  | TmTimesfloat (fi, ((TmFloat (_) as t1)), t2) ->
       let t2' = eval1 ctx t2 in TmTimesfloat (fi, t1, t2')
   | TmTimesfloat (fi, t1, t2) ->
       let t1' = eval1 ctx t1 in TmTimesfloat (fi, t1', t2)
@@ -72,12 +73,12 @@ let rec eval1 ctx t =
   | TmIsZero (_, (TmSucc (_, nv1))) when isnumericval ctx nv1 ->
       TmFalse dummyinfo
   | TmIsZero (fi, t1) -> let t1' = eval1 ctx t1 in TmIsZero (fi, t1')
-  | TmLet (fi, x, v1, t2) when isval ctx v1 -> termSubstTop v1 t2
+  | TmLet (_, _, v1, t2) when isval ctx v1 -> termSubstTop v1 t2
   | TmLet (fi, x, t1, t2) -> let t1' = eval1 ctx t1 in TmLet (fi, x, t1', t2)
-  | _ -> raise NoRuleApplies
+  | _ -> raise Common.NoRuleAppliesException
   
 let rec eval ctx t =
-  try let t' = eval1 ctx t in eval ctx t' with | NoRuleApplies -> t
+  try let t' = eval1 ctx t in eval ctx t' with | Common.NoRuleAppliesException -> t
   
 let evalbinding ctx b =
   match b with

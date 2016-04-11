@@ -11,11 +11,9 @@ See LICENSE.TXT for licensing details.
 module Core
 
 open Ast
-
+open TaplCommon
 
 (* ------------------------   EVALUATION  ------------------------ *)
-
-exception NoRuleApplies
 
 let rec isnumericval = function
     | TmZero _ -> true
@@ -30,10 +28,10 @@ let rec isval = function
     | _ -> false
 
 let rec eval1 = function
-    | TmIf (_, TmTrue _, t2, t3) ->
+    | TmIf (_, TmTrue _, t2, _) ->
         t2
 
-    | TmIf (_, TmFalse _, t2, t3) ->
+    | TmIf (_, TmFalse _, _, t3) ->
         t3
 
     | TmIf (fi, t1, t2, t3) ->
@@ -65,11 +63,11 @@ let rec eval1 = function
         TmIsZero (fi, t1')
 
     | _ -> 
-        raise NoRuleApplies
+        raise Common.NoRuleAppliesException
 
 let rec eval t =
     try
         let t' = eval1 t
         eval t'
     with
-    | NoRuleApplies -> t
+    | Common.NoRuleAppliesException -> t

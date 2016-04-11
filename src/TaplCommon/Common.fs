@@ -4,7 +4,21 @@ open FSharp.Compatibility.OCaml
 open FSharp.Compatibility.OCaml.Format
 open Core
 
+module List =
+    let assoc a (l : ('a * 'b) list) =
+        
+        let rec loop (l' : ('a * 'b) list) =
+            match l' with
+            | [] -> None
+            | (a', b')::tl ->
+                if a' = a then Some b'
+                else loop tl
+        loop l
+
 module Common =
+
+    exception NoRuleAppliesException
+    exception NotFoundException
 
     let searchpath = ref [""]
 

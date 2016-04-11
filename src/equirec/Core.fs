@@ -10,41 +10,39 @@ See LICENSE.TXT for licensing details.
 /// Core typechecking and evaluation functions.
 module Core
 
-open FSharp.Compatibility.OCaml
 open Ast
+open TaplCommon
 
 (* ------------------------   EVALUATION  ------------------------ *)
-let rec isval ctx t = match t with | TmAbs (_, _, _, _) -> true | _ -> false
-  
-exception NoRuleApplies
+let rec isval _ t = match t with | TmAbs (_) -> true | _ -> false
   
 let rec eval1 ctx t =
   match t with
-  | TmApp (fi, (TmAbs (_, x, tyT11, t12)), v2) when isval ctx v2 ->
+  | TmApp (_, (TmAbs (_, _, _, t12)), v2) when isval ctx v2 ->
       termSubstTop v2 t12
   | TmApp (fi, v1, t2) when isval ctx v1 ->
       let t2' = eval1 ctx t2 in TmApp (fi, v1, t2')
   | TmApp (fi, t1, t2) -> let t1' = eval1 ctx t1 in TmApp (fi, t1', t2)
-  | _ -> raise NoRuleApplies
+  | _ -> raise Common.NoRuleAppliesException
   
 let rec eval ctx t =
-  try let t' = eval1 ctx t in eval ctx t' with | NoRuleApplies -> t
+  try let t' = eval1 ctx t in eval ctx t' with | Common.NoRuleAppliesException -> t
   
-let rec computety ctx tyT =
+let rec computety _ tyT =
   match tyT with
-  | (TyRec (x, tyS1) as tyS) -> typeSubstTop tyS tyS1
-  | _ -> raise NoRuleApplies
+  | (TyRec (_, tyS1) as tyS) -> typeSubstTop tyS tyS1
+  | _ -> raise Common.NoRuleAppliesException
   
 let rec simplifyty ctx tyT =
   try let tyT' = computety ctx tyT in simplifyty ctx tyT'
-  with | NoRuleApplies -> tyT
+  with | Common.NoRuleAppliesException -> tyT
   
 let rec private tyeqv' seen ctx tyS tyT =
-  (List.mem (tyS, tyT) seen) ||
+  (List.exists (fun x -> x = (tyS, tyT)) seen) ||
     (match (tyS, tyT) with
-     | (TyRec (x, tyS1), _) ->
+     | (TyRec (_, tyS1), _) ->
          tyeqv' ((tyS, tyT) :: seen) ctx (typeSubstTop tyS tyS1) tyT
-     | (_, TyRec (x, tyT1)) ->
+     | (_, TyRec (_, tyT1)) ->
          tyeqv' ((tyS, tyT) :: seen) ctx tyS (typeSubstTop tyT tyT1)
      | (TyId b1, TyId b2) -> b1 = b2
      | (TyArr (tyS1, tyS2), TyArr (tyT1, tyT2)) ->
@@ -57,7 +55,7 @@ let tyeqv ctx tyS tyT = tyeqv' [] ctx tyS tyT
 let rec typeof ctx t =
   match t with
   | TmVar (fi, i, _) -> getTypeFromContext fi ctx i
-  | TmAbs (fi, x, tyT1, t2) ->
+  | TmAbs (_, x, tyT1, t2) ->
       let ctx' = addbinding ctx x (VarBind tyT1) in
       let tyT2 = typeof ctx' t2 in TyArr (tyT1, typeShift (-1) tyT2)
   | TmApp (fi, t1, t2) ->

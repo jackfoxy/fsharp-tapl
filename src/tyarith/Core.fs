@@ -10,11 +10,10 @@ See LICENSE.TXT for licensing details.
 /// Core typechecking and evaluation functions.
 module Core
 
-open FSharp.Compatibility.OCaml
 open Ast
+open TaplCommon
 
 (* ------------------------   EVALUATION  ------------------------ *)
-exception NoRuleApplies
   
 let rec isnumericval t =
   match t with
@@ -31,8 +30,8 @@ let rec isval t =
   
 let rec eval1 t =
   match t with
-  | TmIf (_, (TmTrue _), t2, t3) -> t2
-  | TmIf (_, (TmFalse _), t2, t3) -> t3
+  | TmIf (_, (TmTrue _), t2,_) -> t2
+  | TmIf (_, (TmFalse _), _, t3) -> t3
   | TmIf (fi, t1, t2, t3) -> let t1' = eval1 t1 in TmIf (fi, t1', t2, t3)
   | TmSucc (fi, t1) -> let t1' = eval1 t1 in TmSucc (fi, t1')
   | TmPred (_, (TmZero _)) -> TmZero dummyinfo
@@ -42,15 +41,15 @@ let rec eval1 t =
   | TmIsZero (_, (TmSucc (_, nv1))) when isnumericval nv1 ->
       TmFalse dummyinfo
   | TmIsZero (fi, t1) -> let t1' = eval1 t1 in TmIsZero (fi, t1')
-  | _ -> raise NoRuleApplies
+  | _ -> raise Common.NoRuleAppliesException
   
-let rec eval t = try let t' = eval1 t in eval t' with | NoRuleApplies -> t
+let rec eval t = try let t' = eval1 t in eval t' with | Common.NoRuleAppliesException -> t
   
 (* ------------------------   TYPING  ------------------------ *)
 let rec typeof t =
   match t with
-  | TmTrue fi -> TyBool
-  | TmFalse fi -> TyBool
+  | TmTrue _ -> TyBool
+  | TmFalse _ -> TyBool
   | TmIf (fi, t1, t2, t3) ->
       if (typeof t1) = TyBool
       then
@@ -60,7 +59,7 @@ let rec typeof t =
            then tyT2
            else error fi "arms of conditional have different types")
       else error fi "guard of conditional not a boolean"
-  | TmZero fi -> TyNat
+  | TmZero _ -> TyNat
   | TmSucc (fi, t1) ->
       if (typeof t1) = TyNat
       then TyNat
