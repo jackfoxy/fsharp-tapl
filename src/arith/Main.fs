@@ -22,6 +22,8 @@ open FSharp.Compatibility.OCaml.Format
 open Ast
 open Core
 open TaplCommon
+open CommandLine
+open CommandLine
 
 let parseFile (inFile : string) =
     use textReader = new System.IO.StreamReader(inFile)
@@ -41,7 +43,6 @@ let rec processCommand cmd =
         force_newline ()
   
 let processFile f =
-    Common.alreadyImported := f :: !Common.alreadyImported
     let cmds = parseFile f
     let g c =
         open_hvbox 0
@@ -50,8 +51,22 @@ let processFile f =
         results
     List.iter g cmds
 
-let main () =
-    let inFile = Common.parseArgs ()
-    processFile inFile
+module console1 =
+    [<EntryPoint>]
+    let main argv = 
 
-Common.runMain main
+        let parsedCommand = CommandLine.parse argv
+
+        match parsedCommand.Source with
+        | Source.Console s -> printfn "%s" parsedCommand.Usage
+        | Source.File inFile -> 
+            let main () =
+                processFile inFile
+
+            Common.runMain main
+            ()
+        
+        | NoSource -> 
+            CommandLine.reportEerror parsedCommand
+
+        0

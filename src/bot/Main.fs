@@ -22,6 +22,7 @@ open FSharp.Compatibility.OCaml.Format
 open Ast
 open Core
 open TaplCommon
+open CommandLine
   
 let prbindingty _ b =
     match b with 
@@ -59,7 +60,6 @@ let parseFile (inFile : string) =
         error (Lexer.info lexbuf) "Parse error"
 
 let processFile f ctx =
-    Common.alreadyImported := f :: !Common.alreadyImported;
     let (cmds, _) = parseFile f ctx
     let g ctx c =
         open_hvbox 0
@@ -67,9 +67,23 @@ let processFile f ctx =
         print_flush ()
         results
     List.fold g ctx cmds
-  
-let main () =
-  let inFile = Common.parseArgs ()
-  processFile inFile emptycontext |> ignore
-  
-Common.runMain main
+
+module console1 =
+    [<EntryPoint>]
+    let main argv = 
+
+        let parsedCommand = CommandLine.parse argv
+
+        match parsedCommand.Source with
+        | Source.Console s -> printfn "%s" parsedCommand.Usage
+        | Source.File inFile -> 
+            let main () =
+                processFile inFile emptycontext |> ignore
+
+            Common.runMain main
+            ()
+        
+        | NoSource -> 
+            CommandLine.reportEerror parsedCommand
+
+        0

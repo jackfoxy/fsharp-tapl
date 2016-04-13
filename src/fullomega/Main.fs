@@ -22,6 +22,7 @@ open FSharp.Compatibility.OCaml.Format
 open Ast
 open Core
 open TaplCommon
+open CommandLine
   
 let parseFile (inFile : string) =
     use textReader = new System.IO.StreamReader(inFile)
@@ -110,7 +111,6 @@ let rec processCommand (ctx, store) cmd =
         | _ -> error fi "existential type expected"
   
 let processFile f (ctx, store) =
-    Common.alreadyImported := f :: !Common.alreadyImported
     let (cmds, _) = parseFile f ctx
     let g (ctx, store) c =
         open_hvbox 0;
@@ -118,9 +118,23 @@ let processFile f (ctx, store) =
         print_flush ()
         results
     List.fold g (ctx, store) cmds
-  
-let main () =
-    let inFile = Common.parseArgs ()
-    processFile inFile (emptycontext, emptystore) |> ignore
-  
-Common.runMain main
+
+module console1 =
+    [<EntryPoint>]
+    let main argv = 
+
+        let parsedCommand = CommandLine.parse argv
+
+        match parsedCommand.Source with
+        | Source.Console s -> printfn "%s" parsedCommand.Usage
+        | Source.File inFile -> 
+            let main () =
+                processFile inFile (emptycontext, emptystore) |> ignore
+
+            Common.runMain main
+            ()
+        
+        | NoSource -> 
+            CommandLine.reportEerror parsedCommand
+
+        0

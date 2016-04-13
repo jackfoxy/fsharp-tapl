@@ -1,8 +1,130 @@
 ﻿namespace TaplCommon
 
-open FSharp.Compatibility.OCaml
-open FSharp.Compatibility.OCaml.Format
-open Core
+open FSharpx.Choice
+open Argu
+
+module CommandLine = 
+
+    let (|Success|Failure|) = function
+        | Choice1Of2 x -> Success x
+        | Choice2Of2 x -> Failure x
+
+    let inline Success x = Choice1Of2 x
+    let inline Failure x = Choice2Of2 x
+
+    type Source =
+        | File of string
+        | Console of string
+        | NoSource
+
+    type Target =
+        | File of string
+        | Console
+
+    type ParsedCommand =
+        {
+        Usage : string
+        Source : Source
+        Target : Target
+        ErrorMsg: string option
+        }
+
+    type CLIArguments =
+        | [<AltCommandLine("-i")>] Input of string
+        | [<AltCommandLine("-o")>] Output of string
+        | [<AltCommandLine("-s")>] ConsoleInput of string 
+  
+         with
+            interface IArgParserTemplate with
+                member s.Usage =
+                    match s with
+                    | Input _ -> "(optional) file path to process"
+                    | Output _ -> "(optional, not implemented) output path"
+                    | ConsoleInput _ -> "input from console"
+
+    let parseCommandLine argv = 
+
+        try
+            Success (ArgumentParser.Create<CLIArguments>().Parse argv)
+        with e ->
+            match e with
+            | :? System.ArgumentException -> Failure e.Message
+            | _ -> raise e
+             
+    let parseTarget (commandLine : ParseResults<CLIArguments>) = 
+
+        let targetList = 
+            []
+            |> (fun x -> 
+                    if commandLine.Contains <@ Output @> then 
+                        match commandLine.TryGetResult <@ Output @> with
+                        | Some path -> (Target.File path)::x
+                        | None -> x
+                    else x)
+
+        match targetList with
+        | [] -> Success Target.Console
+        | [x] -> Success x
+        | hd::tl -> Failure (sprintf "more than one output target specified: %s, %s" (hd.ToString()) (tl.Head.ToString()))
+
+    let parseSource (commandLine : ParseResults<CLIArguments>) = 
+
+        let sourceList = 
+            []
+            |> (fun x -> 
+                    if commandLine.Contains <@ Input @> then 
+                        match commandLine.TryGetResult <@ Input @> with
+                        | Some path -> (Source.File path)::x
+                        | None -> x
+                        
+                    else x)
+            |> (fun x -> 
+                    if commandLine.Contains <@ ConsoleInput @> then 
+                        match commandLine.TryGetResult <@ ConsoleInput @> with
+                        | Some consoleInput -> (Source.Console consoleInput)::x
+                        | None -> x
+                    else x)
+
+        match sourceList with
+        | [] -> Success Source.NoSource
+        | [x] -> Success x
+        | hd::tl ->Failure (sprintf "more than one input source specified: %s, %s" (hd.ToString()) (tl.Head.ToString()))
+        
+    let parse argv = 
+
+        match choose { 
+                        let! commandLine = parseCommandLine argv
+                       
+                        let! target = parseTarget commandLine
+                        let! source = parseSource commandLine
+
+                        return 
+                            {
+                            Usage = commandLine.Usage()
+                            Source = source
+                            Target = target
+                            ErrorMsg = None
+                            } 
+                        } with
+        | Success x -> x
+        | Failure msg -> 
+            let commandLine = ArgumentParser.Create<CLIArguments>()
+            {
+            Usage = commandLine.Usage()
+            Source = Source.NoSource
+            Target = Target.Console 
+            ErrorMsg = Some msg
+            } 
+
+    let reportEerror (parsedCommand : ParsedCommand) =
+        
+        match parsedCommand.ErrorMsg with
+        | Some msg ->
+            printfn "%s" msg
+            printfn " "
+        | None -> ()
+
+        printfn "%s" parsedCommand.Usage
 
 module List =
     let assoc a (l : ('a * 'b) list) =
@@ -15,43 +137,12 @@ module List =
                 else loop tl
         loop l
 
+open FSharp.Compatibility.OCaml.Format
+
 module Common =
 
     exception NoRuleAppliesException
     exception NotFoundException
-
-    let searchpath = ref [""]
-
-    let argDefs = [
-      "-I",
-          Arg.String (fun f -> searchpath := f :: !searchpath),
-          "Append a directory to the search path"]
-
-    let parseArgs () =
-        let inFile : string option ref = ref None
-        Arg.parse argDefs 
-             (fun s ->
-                match !inFile with
-                | Some _ -> err "You must specify exactly one input file"
-                | None -> inFile := Some s)
-            ""
-        match !inFile with
-        | Some s -> s
-        | None ->
-            err "You must specify an input file"
-
-    let openfile infile =
-        let rec trynext l =
-            match l with
-            | [] -> err ("Could not find " + infile)
-            | d :: rest ->
-                let name = if d = "" then infile else (d + "/" + infile)
-                try open_in name
-                with Sys_error m ->
-                    trynext rest
-        trynext !searchpath
-
-    let alreadyImported = ref ([] : string list)
 
     let runMain (main : unit -> unit) =
 

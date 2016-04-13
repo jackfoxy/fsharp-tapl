@@ -1,4 +1,2 @@
-
 group Projects
-	FSharp.Compatibility.OCaml
-	FSharp.Compatibility.OCaml.Format
+FSharp.Compatibility.OCaml.Format

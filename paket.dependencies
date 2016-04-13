@@ -3,9 +3,9 @@ source https://nuget.org/api/v2
 group Projects
 	source https://nuget.org/api/v2
 
-	nuget FSharp.Compatibility.OCaml
+	nuget Argu
 	nuget FSharp.Compatibility.OCaml.Format
-	nuget FSharp.Compatibility.OCaml.System
+nuget FSharpx.Extras
 
 group Build
   source https://nuget.org/api/v2

@@ -22,6 +22,7 @@ open FSharp.Compatibility.OCaml.Format
 open Ast
 open Core
 open TaplCommon
+open CommandLine
   
 let parseFile (inFile : string) =
     use textReader = new System.IO.StreamReader(inFile)
@@ -34,48 +35,51 @@ let parseFile (inFile : string) =
         error (Lexer.info lexbuf) "Parse error"
   
 let prbindingty _ b =
-  match b with | NameBind -> () | VarBind tyT -> (pr ": "; printty tyT)
+      match b with | NameBind -> () | VarBind tyT -> (pr ": "; printty tyT)
   
 let rec processCommand ctx cmd =
-  match cmd with
-  | Eval (_, t) ->
-      let tyT = typeof ctx t in
-      let t' = eval ctx t
-      in
-        (printtmATerm true ctx t';
-         print_break 1 2;
-         pr ": ";
-         printty tyT;
-         force_newline ();
-         ctx)
-  | Bind (_, x, bind) ->
-      (pr x;
-       pr " ";
-       prbindingty ctx bind;
-       force_newline ();
-       addbinding ctx x bind)
+    match cmd with
+    | Eval (_, t) ->
+        let tyT = typeof ctx t
+        let t' = eval ctx t
+        printtmATerm true ctx t'
+        print_break 1 2
+        pr ": "
+        printty tyT
+        force_newline ()
+        ctx
+    | Bind (_, x, bind) ->
+        pr x
+        pr " "
+        prbindingty ctx bind
+        force_newline ()
+        addbinding ctx x bind
   
 let processFile f ctx =
-  (Common.alreadyImported := f :: !Common.alreadyImported;
-   let (cmds, _) = parseFile f ctx in
-   let g ctx c =
-     (open_hvbox 0;
-      let results = processCommand ctx c in (print_flush (); results))
-   in List.fold g ctx cmds)
-  
-let main () =
-  let inFile = Common.parseArgs ()
-  processFile inFile emptycontext |> ignore
-  
-set_max_boxes 1000
-set_margin 67
-  
-let res =
-    try (fun () -> try (main (); 0) with | Exit x -> x) ()
-    with e ->
-        printfn "%A" e
-        exit 2
-  
-print_flush ()
-  
-exit res
+    let (cmds, _) = parseFile f ctx
+    let g ctx c =
+        open_hvbox 0
+        let results = processCommand ctx c
+        print_flush ()
+        results
+    List.fold g ctx cmds
+
+module console1 =
+    [<EntryPoint>]
+    let main argv = 
+
+        let parsedCommand = CommandLine.parse argv
+
+        match parsedCommand.Source with
+        | Source.Console s -> printfn "%s" parsedCommand.Usage
+        | Source.File inFile -> 
+            let main () =
+                processFile inFile emptycontext |> ignore
+
+            Common.runMain main
+            ()
+        
+        | NoSource -> 
+            CommandLine.reportEerror parsedCommand
+
+        0

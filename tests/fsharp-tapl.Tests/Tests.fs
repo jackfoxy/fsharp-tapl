@@ -10,7 +10,7 @@ module Tests =
     let regression name (expected : string list) =
 
         let exe =  sprintf @"E:\BitSync\GitRepos\fsharp-tapl\bin\Debug\%s" name
-        let testFile = sprintf  @"E:\BitSync\GitRepos\fsharp-tapl\src\%s\test.f" name
+        let testFile = sprintf  @"-i E:\BitSync\GitRepos\fsharp-tapl\src\%s\test.f" name
 
         let (outputs, errors) = 
             RunProcess.runProc exe testFile None
