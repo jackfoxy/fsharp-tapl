@@ -24,15 +24,40 @@ open Core
 open TaplCommon
 open CommandLine
   
-let parseFile (inFile : string) =
-    use textReader = new System.IO.StreamReader(inFile)
-    let lexbuf = LexBuffer<char>.FromTextReader textReader
-    Lexer.filename := inFile
-    Lexer.lineno := 1
+let parseInput (input : CommandLine.Source) =
 
-    try Parser.toplevel Lexer.main lexbuf
-    with Parsing.RecoverableParseError ->
-        error (Lexer.info lexbuf) "Parse error"
+    let parseIt lexbuf =
+        Lexer.lineno := 1
+
+        try Parser.toplevel Lexer.main lexbuf
+        with Parsing.RecoverableParseError ->
+            error (Lexer.info lexbuf) "Parse error"
+
+    match input with
+    | Source.Console s -> 
+        LexBuffer<char>.FromString s
+        |> parseIt
+    | Source.File path ->
+        use textReader = new System.IO.StreamReader(path)
+        Lexer.filename := path
+        LexBuffer<char>.FromTextReader textReader
+        |> parseIt
+    | _ -> invalidArg "can't get here" ""
+
+//let parseInputFile (f : string) =
+//
+//    let parseIt lexbuf =
+//        Lexer.lineno := 1
+//
+//        try Parser.toplevel Lexer.main lexbuf
+//        with Parsing.RecoverableParseError ->
+//            error (Lexer.info lexbuf) "Parse error"
+//
+//    use textReader = new System.IO.StreamReader(f)
+//    Lexer.filename := f
+//    LexBuffer<char>.FromTextReader textReader
+//    |> parseIt
+
   
 let checkbinding fi ctx b =
     match b with
@@ -70,8 +95,8 @@ let prbindingty ctx b =
         | None -> printty ctx (typeof ctx t)
         | Some tyT -> printty ctx tyT
   
-let rec processFile f (ctx, store) =
-    let (cmds, _) = parseFile f ctx 
+let rec processInput input (ctx, store) =
+    let (cmds, _) = parseInput input ctx 
     let g (ctx, store) c =
         open_hvbox 0
         let results = processCommand (ctx, store) c
@@ -80,7 +105,7 @@ let rec processFile f (ctx, store) =
     List.fold g (ctx, store) cmds
 and processCommand (ctx, store) cmd =
     match cmd with
-    | Import f -> processFile f (ctx, store)
+    | Import f -> processInput (Source.File f) (ctx, store)
     | Eval (_, t) ->
         let tyT = typeof ctx t 
         let (t', store) = eval ctx store t
@@ -126,10 +151,11 @@ module console1 =
         let parsedCommand = CommandLine.parse argv
 
         match parsedCommand.Source with
-        | Source.Console s -> printfn "%s" parsedCommand.Usage
-        | Source.File inFile -> 
+        | NoSource -> 
+            CommandLine.reportEerror parsedCommand
+        | input -> 
             let main () =
-                processFile inFile (emptycontext, emptystore) |> ignore
+                processInput input (emptycontext, emptystore) |> ignore
 
             Common.runMain main
             ()

@@ -1,19 +1,27 @@
 
 namespace FsharpTapl.Tests.Regression
 
-//open fsharp-tapl
-
 open NUnit.Framework
+
+type InputSource =
+    | File
+    | Console of string
 
 module Tests =
 
-    let regression name (expected : string list) =
+    let regression name inputSource (expected : string list) =
 
-        let exe =  sprintf @"E:\BitSync\GitRepos\fsharp-tapl\bin\Debug\%s" name
-        let testFile = sprintf  @"-i E:\BitSync\GitRepos\fsharp-tapl\src\%s\test.f" name
+        let exe =  sprintf @"..\..\..\..\bin\Debug\%s" name
+
+        let args =
+            match inputSource with
+            | File ->
+                sprintf  @"-i ..\..\..\..\src\%s\test.f" name
+            | Console consoleInput ->
+                sprintf "-s \"%s\"" consoleInput
 
         let (outputs, errors) = 
-            RunProcess.runProc exe testFile None
+            RunProcess.runProc exe args None
 
         Assert.AreEqual((Seq.length errors), 0)
 
@@ -25,35 +33,55 @@ module Tests =
         Assert.AreEqual(expected, output)
 
     [<Test>]
-    let ``arith`` () =
+    let ``arith file`` () =
 
-        regression "arith" ["true"; "false"; "0"; "1"; "false"]
+        regression "arith" File ["true"; "false"; "0"; "1"; "false"]
 
     [<Test>]
-    let ``bot`` () =
+    let ``arith string`` () =
 
-        regression "bot" ["(lambda x:Top. x) : Top -> Top";
+        regression "arith" (Console "iszero (pred (succ 0));") ["true"]
+
+    [<Test>]
+    let ``bot file`` () =
+
+        regression "bot" File ["(lambda x:Top. x) : Top -> Top";
                             "(lambda x:Top. x) : Top";
                             "(lambda x:Top. x) : Top -> Top";
                             "(lambda x:Bot. x) : Bot -> Bot";
                             "(lambda x:Bot. x x) : Bot -> Bot";]
 
     [<Test>]
-    let ``equirec`` () =
+    let ``bot string`` () =
 
-        regression "equirec" ["(lambda x:A. x) : A -> A";
+        regression "bot" (Console "(lambda x:Bot->Top. x) (lambda x:Top. x);") ["(lambda x:Top. x) : Bot -> Top";]
+
+    [<Test>]
+    let ``equirec file`` () =
+
+        regression "equirec" File ["(lambda x:A. x) : A -> A";
                                 "(lambda f:Rec X. A->A. lambda x:A. f x) : (Rec X. A->A) -> A -> A";]
 
     [<Test>]
-    let ``fomega`` () =
+    let ``equirec string`` () =
 
-        regression "fomega" ["(lambda X. lambda x:X. x) : All X. X -> X";
+        regression "equirec" (Console "lambda x:A->B. x;") ["(lambda x:A->B. x) : (A->B) -> A -> B";]
+
+    [<Test>]
+    let ``fomega file`` () =
+
+        regression "fomega" File ["(lambda X. lambda x:X. x) : All X. X -> X";
                             "(lambda x:All X. X->X. x) : (All X. X->X) -> (All X. X -> X)";]
 
     [<Test>]
-    let ``fomsub`` () =
+    let ``fomega string`` () =
 
-        regression "fomsub" ["(lambda X. lambda x:X. x) : All X. X -> X";
+        regression "fomega" (Console "lambda X. lambda x:X->X. x;") ["(lambda X. lambda x:X->X. x) : All X. (X->X) -> X -> X";]
+
+    [<Test>]
+    let ``fomsub file`` () =
+
+        regression "fomsub" File ["(lambda X. lambda x:X. x) : All X. X -> X";
                             "(lambda x:All X. X->X. x) : (All X. X->X) -> (All X. X -> X)";
                             "(lambda x:Top. x) : Top -> Top";
                             "(lambda x:Top. x) : Top";
@@ -61,9 +89,14 @@ module Tests =
                             "(lambda X<:Top->Top. lambda x:X. x x) : All X<:Top->Top. X -> Top";]
 
     [<Test>]
-    let ``fullequirec`` () =
+    let ``fomsub string`` () =
 
-        regression "fullequirec" ["\"hello\" : String";
+        regression "fomsub" (Console "(lambda x:Top->Top. x x) (lambda x:Top. x);") ["(lambda x:Top. x) : Top";]
+
+    [<Test>]
+    let ``fullequirec file`` () =
+
+        regression "fullequirec" File ["\"hello\" : String";
                                     "(lambda x:A. x) : A -> A";
                                     "6.28318 : Float";
                                     "(lambda x:Bool. x) : Bool -> Bool";
@@ -111,9 +144,14 @@ module Tests =
                                     "10 : Nat";]
 
     [<Test>]
-    let ``fullerror`` () =
+    let ``fullequirec string`` () =
 
-        regression "fullerror" ["(lambda x:Bot. x) : Bot -> Bot";
+        regression "fullequirec" (Console "(lambda x:Nat. pred (succ (succ x))) (pred (succ 0));") ["1 : Nat";]
+
+    [<Test>]
+    let ``fullerror file`` () =
+
+        regression "fullerror" File ["(lambda x:Bot. x) : Bot -> Bot";
                                 "(lambda x:Bot. x x) : Bot -> Bot";
                                 "(lambda x:Top. x) : Top -> Top";
                                 "(lambda x:Top. x) : Top";
@@ -125,9 +163,14 @@ module Tests =
                                 "error : Bool";]
 
     [<Test>]
-    let ``fullfomsub`` () =
+    let ``fullerror string`` () =
 
-        regression "fullfomsub" ["(lambda x:Top. x) : Top -> Top";
+        regression "fullerror" (Console "(lambda x:Bool. x) (if error then true else false);") ["error : Bool";]
+
+    [<Test>]
+    let ``fullfomsub file`` () =
+
+        regression "fullfomsub" File ["(lambda x:Top. x) : Top -> Top";
                                 "(lambda x:Top. x) : Top";
                                 "(lambda x:Top. x) : Top -> Top";
                                 "(lambda z:Top. z) : Top";
@@ -172,9 +215,14 @@ module Tests =
                                 "tail : All X. List X -> List X";]
 
     [<Test>]
-    let ``fullfomsubref`` () =
+    let ``fullfomsub string`` () =
 
-        regression "fullfomsubref" ["(lambda x:Bot. x) : Bot -> Bot";
+        regression "fullfomsub" (Console "if true then {x=true,y=false,a=false} else {y=false,x={},b=false};") ["{x=true, y=false, a=false} : {x:Top, y:Bool}";]
+
+    [<Test>]
+    let ``fullfomsubref file`` () =
+
+        regression "fullfomsubref" File ["(lambda x:Bot. x) : Bot -> Bot";
                                     "(lambda x:Bot. x x) : Bot -> Bot";
                                     "(lambda x:<a:Bool,b:Bool>. x)";
                                     "  : <a:Bool,b:Bool> -> <a:Bool, b:Bool>";
@@ -259,9 +307,14 @@ module Tests =
                                     "4 : Nat";]
 
     [<Test>]
-    let ``fullisorec`` () =
+    let ``fullfomsubref string`` () =
 
-        regression "fullisorec" ["\"hello\" : String";
+        regression "fullfomsubref" (Console "if true then {x=true,y=false,a=false} else {y=false,x={},b=false};") ["{x=true, y=false, a=false} : {x:Top, y:Bool}";]
+
+    [<Test>]
+    let ``fullisorec file`` () =
+
+        regression "fullisorec" File ["\"hello\" : String";
                                 "unit : Unit";
                                 "(lambda x:A. x) : A -> A";
                                 "true : Bool";
@@ -284,9 +337,14 @@ module Tests =
                                 "(lambda f:T. lambda x:Nat. f (f x)) : T -> Nat -> Nat";]
 
     [<Test>]
-    let ``fullomega`` () =
+    let ``fullisorec string`` () =
 
-        regression "fullomega" ["\"hello\" : String";
+        regression "fullisorec" (Console "(lambda x:Nat. pred(succ (succ x))) (succ 0);") ["2 : Nat";]
+
+    [<Test>]
+    let ``fullomega file`` () =
+
+        regression "fullomega" File ["\"hello\" : String";
                                 "unit : Unit";
                                 "(lambda x:A. x) : A -> A";
                                 "true : Bool";
@@ -325,9 +383,14 @@ module Tests =
                                 "tail : All X. List X -> List X";]
 
     [<Test>]
-    let ``fullpoly`` () =
+    let ``fullomega string`` () =
 
-        regression "fullpoly" ["\"hello\" : String";
+        regression "fullomega" (Console "List = lambda X. All R. (X->R->R) -> R -> R;") ["List :: * => *";]
+
+    [<Test>]
+    let ``fullpoly file`` () =
+
+        regression "fullpoly" File ["\"hello\" : String";
                                 "unit : Unit";
                                 "(lambda x:A. x) : A -> A";
                                 "true : Bool";
@@ -351,9 +414,14 @@ module Tests =
                                 "1 : Nat";]
 
     [<Test>]
-    let ``fullrecon`` () =
+    let ``fullpoly string`` () =
 
-        regression "fullrecon" ["true : Bool";
+        regression "fullpoly" (Console "T = Nat->Nat;") ["T :: *";]
+
+    [<Test>]
+    let ``fullrecon file`` () =
+
+        regression "fullrecon" File ["true : Bool";
                                 "       (lambda x:Bool. x) : Bool -> Bool";
                                 "                     true : Bool";
                                 "       (lambda x:Nat. (succ x)) : Nat -> Nat";
@@ -367,9 +435,14 @@ module Tests =
                                 "    ";]
 
     [<Test>]
-    let ``fullref`` () =
+    let ``fullrecon string`` () =
 
-        regression "fullref" ["(lambda x:Bot. x) : Bot -> Bot";
+        regression "fullrecon" (Console "lambda X. lambda x:X. x;") ["(lambda X. lambda x:X. x) : All X. X -> X";]
+
+    [<Test>]
+    let ``fullref file`` () =
+
+        regression "fullref" File ["(lambda x:Bot. x) : Bot -> Bot";
                                 "(lambda x:Bot. x x) : Bot -> Bot";
                                 "(lambda x:<a:Bool,b:Bool>. x)";
                                 "  : <a:Bool,b:Bool> -> <a:Bool, b:Bool>";
@@ -395,9 +468,14 @@ module Tests =
                                 "(lambda f:T. lambda x:Nat. f (f x)) : T -> Nat -> Nat";]
 
     [<Test>]
-    let ``fullsimple`` () =
+    let ``fullref string`` () =
 
-        regression "fullsimple" ["(lambda x:<a:Bool,b:Bool>. x)";
+        regression "fullref" (Console "(lambda x:Top->Top. x) (lambda x:Top. x);") ["(lambda x:Top. x) : Top -> Top";]
+
+    [<Test>]
+    let ``fullsimple file`` () =
+
+        regression "fullsimple" File ["(lambda x:<a:Bool,b:Bool>. x)";
                                 "  : <a:Bool,b:Bool> -> <a:Bool, b:Bool>";
                                 "\"hello\" : String";
                                 "unit : Unit";
@@ -416,9 +494,14 @@ module Tests =
                                 "(lambda f:T. lambda x:Nat. f (f x)) : T -> Nat -> Nat";]
 
     [<Test>]
-    let ``fullsub`` () =
+    let ``fullsimple string`` () =
 
-        regression "fullsub" ["(lambda x:Top. x) : Top -> Top";
+        regression "fullsimple" (Console "(lambda x:Nat. pred(succ (succ x))) (succ 0);") ["2 : Nat";]
+
+    [<Test>]
+    let ``fullsub file`` () =
+
+        regression "fullsub" File ["(lambda x:Top. x) : Top -> Top";
                                 "(lambda x:Top. x) : Top";
                                 "(lambda x:Top. x) : Top -> Top";
                                 "(lambda z:Top. z) : Top";
@@ -440,9 +523,14 @@ module Tests =
                                 "(lambda f:T. lambda x:Nat. f (f x)) : T -> Nat -> Nat";]
 
     [<Test>]
-    let ``fulluntyped`` () =
+    let ``fullsub string`` () =
 
-        regression "fulluntyped" ["true";
+        regression "fullsub" (Console "(lambda x:Nat. pred (succ (succ x))) (succ 0);") ["2 : Nat";]
+
+    [<Test>]
+    let ``fulluntyped file`` () =
+
+        regression "fulluntyped" File ["true";
                                     "false";
                                     "x ";
                                     "x";
@@ -461,9 +549,14 @@ module Tests =
                                     "true";]
 
     [<Test>]
-    let ``fullupdate`` () =
+    let ``fulluntyped string`` () =
 
-        regression "fullupdate" ["(lambda x:Top. x) : Top -> Top";
+        regression "fulluntyped" (Console "iszero (pred (succ (succ (succ 0))));") ["false";]
+
+    [<Test>]
+    let ``fullupdate file`` () =
+
+        regression "fullupdate" File ["(lambda x:Top. x) : Top -> Top";
                                 "(lambda x:Top. x) : Top";
                                 "(lambda x:Top. x) : Top -> Top";
                                 "(lambda z:Top. z) : Top";
@@ -506,21 +599,26 @@ module Tests =
                                 "isnil : All X. List X -> Bool";
                                 "head : All X. List X -> X";
                                 "tail : All X. List X -> List X";]
+                
+    [<Test>]
+    let ``fullupdate string`` () =
 
+        regression "fullupdate" (Console "(lambda X. lambda x:X. x) [All X.X->X];") ["(lambda x:All X. X->X. x) : (All X. X->X) -> (All X. X -> X)";]
+                         
 //    [<Test>]
-//    let ``joinexercise`` () =
+//    let ``joinexercise file`` () =
 //
 //        regression "joinexercise" []
 //
 //    [<Test>]
-//    let ``letexercise`` () =
+//    let ``letexercise file`` () =
 //
 //        regression "letexercise" []
 
     [<Test>]
-    let ``purefsub`` () =
+    let ``purefsub file`` () =
 
-        regression "purefsub" ["(lambda X. lambda x:X. x) : All X. X -> X";
+        regression "purefsub" File ["(lambda X. lambda x:X. x) : All X. X -> X";
                                 "(lambda x:All X. X->X. x) : (All X. X->X) -> (All X. X -> X)";
                                 "(lambda x:Top. x) : Top -> Top";
                                 "(lambda x:Top. x) : Top";
@@ -528,9 +626,14 @@ module Tests =
                                 "(lambda X<:Top->Top. lambda x:X. x x) : All X<:Top->Top. X -> Top";]
 
     [<Test>]
-    let ``rcdsubbot`` () =
+    let ``purefsub string`` () =
 
-        regression "rcdsubbot" ["(lambda x:Top. x) : Top -> Top";
+        regression "purefsub" (Console "lambda X<:Top->Top. lambda x:X. x x;") ["(lambda X<:Top->Top. lambda x:X. x x) : All X<:Top->Top. X -> Top";]
+
+    [<Test>]
+    let ``rcdsubbot file`` () =
+
+        regression "rcdsubbot" File ["(lambda x:Top. x) : Top -> Top";
                                 "(lambda x:Top. x) : Top";
                                 "(lambda x:Top. x) : Top -> Top";
                                 "(lambda z:Top. z) : Top";
@@ -538,9 +641,14 @@ module Tests =
                                 "(lambda x:Bot. x x) : Bot -> Bot";]
 
     [<Test>]
-    let ``recon`` () =
+    let ``rcdsubbot string`` () =
 
-        regression "recon" ["(lambda x:Bool. x) : Bool -> Bool";
+        regression "rcdsubbot" (Console "(lambda x:Top->Top. x) (lambda x:Top. x);") ["(lambda x:Top. x) : Top -> Top";]
+
+    [<Test>]
+    let ``recon file`` () =
+
+        regression "recon" File ["(lambda x:Bool. x) : Bool -> Bool";
                             "                     true : Bool";
                             "       (lambda x:Nat. (succ x)) : Nat -> Nat";
                             "                           3 : Nat";
@@ -550,29 +658,54 @@ module Tests =
                             "    "]
 
     [<Test>]
-    let ``reconbase`` () =
+    let ``recon string`` () =
 
-        regression "reconbase" ["(lambda x:A. x) : A -> A";
+        regression "recon" (Console "(lambda x:Nat. pred (succ (succ x))) (succ 0);") ["2 : Nat";]
+
+    [<Test>]
+    let ``reconbase file`` () =
+
+        regression "reconbase" File ["(lambda x:A. x) : A -> A";
                                 "(lambda x:Bool. x) : Bool -> Bool";
                                 "true : Bool";
                                 "(lambda x:Nat. (succ x)) : Nat -> Nat";
                                 "3 : Nat";]
 
     [<Test>]
-    let ``simplebool`` () =
+    let ``reconbase string`` () =
 
-        regression "simplebool" ["(lambda x:Bool. x) : Bool -> Bool";
-                                "true : Bool";]
-
-//    [<Test>]
-//    let ``tyarith`` () =
-//
-//        regression "tyarith" []
+        regression "reconbase" (Console "(lambda x:Nat. pred (succ (succ x))) (succ 0);") ["2 : Nat";]
 
     [<Test>]
-    let ``untyped`` () =
+    let ``simplebool file`` () =
 
-        regression "untyped" ["x ";
+        regression "simplebool" File ["(lambda x:Bool. x) : Bool -> Bool";
+                                "true : Bool";]
+
+    [<Test>]
+    let ``simplebool string`` () =
+
+        regression "simplebool" (Console "(lambda x:Bool. if x then false else true);") ["(lambda x:Bool. if x then false else true) : Bool -> Bool";]
+
+//    [<Test>]
+//    let ``tyarith file`` () =
+//
+//        regression "tyarith" []
+//
+//    [<Test>]
+//    let ``tyarith string`` () =
+//
+//        regression "tyarith" (Console "") ["";]
+
+    [<Test>]
+    let ``untyped file`` () =
+
+        regression "untyped" File ["x ";
                                 "x";
                                 "(lambda x'. x')";
                                 "(lambda x'. x' x')";]
+
+    [<Test>]
+    let ``untyped string`` () =
+
+        regression "untyped" (Console "(lambda x. x) (lambda x. x x);") ["(lambda x. x x)";]

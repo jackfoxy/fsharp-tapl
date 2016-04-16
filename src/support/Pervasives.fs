@@ -10,21 +10,6 @@ See LICENSE.TXT for licensing details.
 [<AutoOpen>]
 module Support.Pervasives
 
-open FSharp.Compatibility.OCaml
+open FSharp.Compatibility.OCaml.Format
 
-
-type Info = Error.Info
-
-let mutable buffer = ""
-
-let pr = Format.print_string
-
-//    fun (s : string) ->
-//        match buffer.Length, (s.Substring(0)) with
-//        | 0, _ ->
-//            buffer <- s
-//        | _, " " -> 
-//        if buffer.Length > 0 then
-//            if buffer.EndsWith ()
-//
-//    printf "%s"
+let pr = print_string

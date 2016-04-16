@@ -25,16 +25,26 @@ open TaplCommon
 open CommandLine
 open CommandLine
 
-let parseFile (inFile : string) =
-    use textReader = new System.IO.StreamReader(inFile)
-    let lexbuf = LexBuffer<char>.FromTextReader textReader
-    Lexer.filename := inFile
-    Lexer.lineno := 1
+let parseInput (input : CommandLine.Source) =
 
-    try Parser.toplevel Lexer.main lexbuf
-    with Parsing.RecoverableParseError ->
-        error (Lexer.info lexbuf) "Parse error"
+    let parseIt lexbuf =
+        Lexer.lineno := 1
 
+        try Parser.toplevel Lexer.main lexbuf
+        with Parsing.RecoverableParseError ->
+            error (Lexer.info lexbuf) "Parse error"
+
+    match input with
+    | Source.Console s -> 
+        LexBuffer<char>.FromString s
+        |> parseIt
+    | Source.File path ->
+        use textReader = new System.IO.StreamReader(path)
+        Lexer.filename := path
+        LexBuffer<char>.FromTextReader textReader
+        |> parseIt
+    | _ -> invalidArg "can't get here" ""
+            
 let rec processCommand cmd =
     match cmd with
     | Eval (_, t) ->
@@ -42,8 +52,8 @@ let rec processCommand cmd =
         printtmATerm true t'
         force_newline ()
   
-let processFile f =
-    let cmds = parseFile f
+let processInput input =
+    let cmds = parseInput input
     let g c =
         open_hvbox 0
         let results = processCommand c
@@ -58,15 +68,12 @@ module console1 =
         let parsedCommand = CommandLine.parse argv
 
         match parsedCommand.Source with
-        | Source.Console s -> printfn "%s" parsedCommand.Usage
-        | Source.File inFile -> 
+        | NoSource -> 
+            CommandLine.reportEerror parsedCommand
+        | input -> 
             let main () =
-                processFile inFile
+                processInput input
 
             Common.runMain main
             ()
-        
-        | NoSource -> 
-            CommandLine.reportEerror parsedCommand
-
         0
