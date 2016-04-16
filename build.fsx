@@ -16,11 +16,7 @@ open System.IO
 open SourceLink
 #endif
 
-// --------------------------------------------------------------------------------------
-// START TODO: Provide project-specific details below
-// --------------------------------------------------------------------------------------
-
-// Information about the project are used
+// Information about the project is used
 //  - for version and project name in generated AssemblyInfo file
 //  - by the generated NuGet package
 //  - to run tests and to publish documentation on GitHub gh-pages
@@ -39,10 +35,10 @@ let summary = "Code for \"Types and Programming Languages\", ported to F#"
 let description = "\"Types and Programming Languages\" provides a comprehensive introduction to type systems and programming language theory. The code which accompanies the book is written in OCaml by Benjamin C.Pierce. Original F# port by Jack Pappas."
 
 // List of author names (for NuGet package)
-let authors = [ "Jack Fox" ]
+let authors = [ "Benjamin C.Pierce"; "Jack Pappas"; "Jack Fox" ]
 
 // Tags for your project (for NuGet package)
-let tags = "types F# tapl"
+let tags = "types F# fsharp tapl"
 
 // File system information
 let solutionFile  = "fsharp-tapl.sln"
@@ -61,10 +57,6 @@ let gitName = "fsharp-tapl"
 // The url for the raw files hosted
 let gitRaw = environVarOrDefault "gitRaw" "https://raw.github.com/jackfoxy"
 
-// --------------------------------------------------------------------------------------
-// END TODO: The rest of the file includes standard build steps
-// --------------------------------------------------------------------------------------
-
 // Read additional information from the release notes document
 let release = LoadReleaseNotes "RELEASE_NOTES.md"
 
@@ -80,11 +72,16 @@ let (|Fsproj|Csproj|Vbproj|Shproj|) (projFileName:string) =
 // Generate assembly info files with the right version & up-to-date information
 Target "AssemblyInfo" (fun _ ->
     let getAssemblyInfoAttributes projectName =
-        [ Attribute.Title (projectName)
-          Attribute.Product project
-          Attribute.Description summary
-          Attribute.Version release.AssemblyVersion
-          Attribute.FileVersion release.AssemblyVersion ]
+        let x =
+            [ Attribute.Title (projectName)
+              Attribute.Product project
+              Attribute.Description (summary.Replace("\"", "\\\""))
+              Attribute.Version release.AssemblyVersion
+              Attribute.FileVersion release.AssemblyVersion ]
+
+        if projectName.ToLower() = "support" then
+            (x @ [(Attribute.StringAttribute ("AutoOpen", "Support", "System"))])
+        else x
 
     let getProjectDetails projectPath =
         let projectName = System.IO.Path.GetFileNameWithoutExtension(projectPath)
@@ -108,12 +105,12 @@ Target "AssemblyInfo" (fun _ ->
 // Copies binaries from default VS location to expected bin folder
 // But keeps a subdirectory structure for each project in the
 // src folder to support multiple project outputs
-Target "CopyBinaries" (fun _ ->
-    !! "src/**/*.??proj"
-    -- "src/**/*.shproj"
-    |>  Seq.map (fun f -> ((System.IO.Path.GetDirectoryName f) </> "bin/Release", "bin" </> (System.IO.Path.GetFileNameWithoutExtension f)))
-    |>  Seq.iter (fun (fromDir, toDir) -> CopyDir toDir fromDir (fun _ -> true))
-)
+//Target "CopyBinaries" (fun _ ->
+//    !! "src/**/*.??proj"
+//    -- "src/**/*.shproj"
+//    |>  Seq.map (fun f -> ((System.IO.Path.GetDirectoryName f) </> "bin/Release", "bin" </> (System.IO.Path.GetFileNameWithoutExtension f)))
+//    |>  Seq.iter (fun (fromDir, toDir) -> CopyDir toDir fromDir (fun _ -> true))
+//)
 
 // --------------------------------------------------------------------------------------
 // Clean build results
@@ -144,11 +141,12 @@ Target "Build" (fun _ ->
 
 Target "RunTests" (fun _ ->
     !! testAssemblies
-    |> NUnit (fun p ->
+    |> NUnit (fun p -> 
         { p with
             DisableShadowCopy = true
             TimeOut = TimeSpan.FromMinutes 20.
-            OutputFile = "TestResults.xml" })
+            OutputFile = "TestResults.xml" 
+            ToolPath = "packages/test/NUnit.ConsoleRunner/tools/nunit3-console.exe"} )
 )
 
 #if MONO
@@ -375,8 +373,8 @@ Target "All" DoNothing
 "Clean"
   ==> "AssemblyInfo"
   ==> "Build"
-  ==> "CopyBinaries"
-  ==> "RunTests"
+//  ==> "CopyBinaries"
+//  ==> "RunTests"
   ==> "GenerateReferenceDocs"
   ==> "GenerateDocs"
   ==> "All"

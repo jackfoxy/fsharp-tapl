@@ -1,6 +1,10 @@
 src/*/Lexer.fs
 src/*/Parser.fs
 src/*/Parser.fsi
+AssemblyInfo.fs
+
+# Generated documentation folder
+docs/output/
 
 #OS junk files
 [Tt]humbs.db
