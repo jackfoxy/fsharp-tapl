@@ -11,7 +11,7 @@ See LICENSE.TXT for licensing details.
 module Core
 
 open Ast
-open TaplCommon
+open FSharpTapl
 
 (* ------------------------   EVALUATION  ------------------------ *)
   

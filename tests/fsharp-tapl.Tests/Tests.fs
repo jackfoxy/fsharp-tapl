@@ -1,5 +1,5 @@
 
-namespace FsharpTapl.Tests.Regression
+namespace FSharpTapl.Tests.Regression
 
 open NUnit.Framework
 

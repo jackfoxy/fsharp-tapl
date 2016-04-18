@@ -1,4 +1,4 @@
-﻿namespace FsharpTapl.Tests.Regression
+﻿namespace FSharpTapl.Tests.Regression
 
 open System
 open System.Diagnostics

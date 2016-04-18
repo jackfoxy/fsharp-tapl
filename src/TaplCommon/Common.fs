@@ -1,7 +1,7 @@
-﻿namespace TaplCommon
+﻿namespace FSharpTapl
 
-open FSharpx.Choice
 open Argu
+open FSharpx.Choice
 
 module CommandLine = 
 

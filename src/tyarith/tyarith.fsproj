@@ -67,6 +67,8 @@
       <OtherFlags>--unicode</OtherFlags>
     </FsLex>
     <Compile Include="Core.fs" />
+    <Compile Include="TyarithLib.fsi" />
+    <Compile Include="TyarithLib.fs" />
     <Compile Include="Main.fs" />
     <None Include="test.f" />
     <Content Include="App.config">

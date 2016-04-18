@@ -61,6 +61,8 @@
     <Compile Include="Parser.fs" />
     <Compile Include="Lexer.fs" />
     <Compile Include="Core.fs" />
+    <Compile Include="ArithLib.fsi" />
+    <Compile Include="ArithLib.fs" />
     <Compile Include="Main.fs" />
     <None Include="test.f" />
     <Content Include="App.config">

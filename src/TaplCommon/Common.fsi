@@ -1,4 +1,4 @@
-﻿namespace TaplCommon
+﻿namespace FSharpTapl
 
 module CommandLine = 
     
