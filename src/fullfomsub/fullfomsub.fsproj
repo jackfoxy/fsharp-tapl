@@ -67,8 +67,8 @@
       <OtherFlags>--unicode</OtherFlags>
     </FsLex>
     <Compile Include="Core.fs" />
-    <Compile Include="Fullfomsub.fsi" />
-    <Compile Include="Fullfomsub.fs" />
+    <Compile Include="FullfomsubLib.fsi" />
+    <Compile Include="FullfomsubLib.fs" />
     <Compile Include="Main.fs" />
     <None Include="test.f" />
     <Content Include="App.config">

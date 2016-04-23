@@ -67,8 +67,8 @@
       <OtherFlags>--unicode</OtherFlags>
     </FsLex>
     <Compile Include="Core.fs" />
-    <Compile Include="Fullomega.fsi" />
-    <Compile Include="Fullomega.fs" />
+    <Compile Include="FullomegaLib.fsi" />
+    <Compile Include="FullomegaLib.fs" />
     <Compile Include="Main.fs" />
     <None Include="test.f" />
     <Content Include="App.config">

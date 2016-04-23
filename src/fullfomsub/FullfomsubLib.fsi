@@ -3,6 +3,6 @@
 open Ast
 open CommandLine
 
-module Fullfomsub =
+module FullfomsubLib =
 
     val processInput : parsedCommand : ParsedCommand -> input : Source -> ctx : Context -> (string * Binding) list

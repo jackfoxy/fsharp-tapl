@@ -67,8 +67,8 @@
       <OtherFlags>--unicode</OtherFlags>
     </FsLex>
     <Compile Include="Core.fs" />
-    <Compile Include="Fullisorec.fsi" />
-    <Compile Include="Fullisorec.fs" />
+    <Compile Include="FullisorecLib.fsi" />
+    <Compile Include="FullisorecLib.fs" />
     <Compile Include="Main.fs" />
     <None Include="test.f" />
     <Content Include="App.config">

@@ -12,7 +12,7 @@ namespace FSharpTapl
 open Ast
 open CommandLine
 open Core
-open Fullomega
+open FullomegaLib
 
 module console1 =
     [<EntryPoint>]

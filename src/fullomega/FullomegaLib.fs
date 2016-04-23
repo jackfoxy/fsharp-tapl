@@ -23,7 +23,7 @@ open Core
 open Microsoft.FSharp.Text
 open Microsoft.FSharp.Text.Lexing
 
-module Fullomega = 
+module FullomegaLib = 
 
     let parseInput (input : CommandLine.Source) = 
 

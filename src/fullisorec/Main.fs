@@ -12,7 +12,7 @@ namespace FSharpTapl
 open Ast
 open CommandLine
 open Core
-open Fullisorec
+open FullisorecLib
 
 module console1 =
     [<EntryPoint>]

@@ -12,7 +12,7 @@ namespace FSharpTapl
 open Ast
 open CommandLine
 open Core
-open Fullfomsubref
+open FullfomsubrefLib
 
 module console1 =
     [<EntryPoint>]

@@ -10,7 +10,7 @@ See LICENSE.TXT for licensing details.
 namespace FSharpTapl
 
 open Ast
-open Fullfomsub
+open FullfomsubLib
 open CommandLine
 
 module console1 =
