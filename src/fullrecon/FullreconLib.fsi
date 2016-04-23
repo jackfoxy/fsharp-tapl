@@ -6,6 +6,6 @@ open CommandLine
 
 module FullreconLib =
 
-    val processInput : input : Source -> ctx : Context  * nextuvar : (unit -> Nextuvar) * constr : (Ty * Ty) list -> (string * Binding) list * (unit -> Nextuvar) * (Ty * Ty) list
+    val processInput : parsedCommand : ParsedCommand -> input : Source -> ctx : Context  * nextuvar : (unit -> Nextuvar) * constr : (Ty * Ty) list -> (string * Binding) list * (unit -> Nextuvar) * (Ty * Ty) list
 
 

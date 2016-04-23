@@ -5,5 +5,5 @@ open CommandLine
 
 module FullpolyLib =
 
-    val processInput : input : Source -> ctx : Context -> (string * Binding) list
+    val processInput : parsedCommand : ParsedCommand -> input : Source -> ctx : Context -> (string * Binding) list
 

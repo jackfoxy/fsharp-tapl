@@ -16,52 +16,54 @@ See LICENSE.TXT for licensing details.
 
 namespace FSharpTapl
 
+open Ast
+open CommandLine
+open Compatability
+open Core
 open Microsoft.FSharp.Text
 open Microsoft.FSharp.Text.Lexing
-open FSharp.Compatibility.OCaml.Format
-open Ast
-open Core
-open CommandLine
 
-module UntypedLib =
+module UntypedLib = 
 
-    let parseInput (input : CommandLine.Source) =
+    let parseInput (input : CommandLine.Source) = 
 
-        let parseIt lexbuf =
+        let parseIt lexbuf = 
             Lexer.lineno := 1
 
-            try Parser.toplevel Lexer.main lexbuf
-            with Parsing.RecoverableParseError ->
+            try 
+                Parser.toplevel Lexer.main lexbuf
+            with Parsing.RecoverableParseError -> 
                 error (Lexer.info lexbuf) "Parse error"
-
         match input with
         | Source.Console s -> 
-            LexBuffer<char>.FromString s
+            LexBuffer<char>.FromString s 
             |> parseIt
-        | Source.File path ->
+        | Source.File path -> 
             use textReader = new System.IO.StreamReader(path)
             Lexer.filename := path
-            LexBuffer<char>.FromTextReader textReader
+            LexBuffer<char>.FromTextReader textReader 
             |> parseIt
         | _ -> invalidArg "can't get here" ""
     
-    let rec processCommand ctx cmd =
+    let rec processCommand ctx cmd = 
         match cmd with
-        | Eval (_, t) ->
+        | Eval(_, t) -> 
             let t' = eval ctx t
             printtmATerm true ctx t'
-            force_newline ()
+            force_newline()
             ctx
-        | Bind (_, x, bind) ->
+        | Bind(_, x, bind) -> 
             pr x
             pr " "
             prbinding ctx bind
-            force_newline ()
+            force_newline()
             addbinding ctx x bind
-  
-    let processInput input ctx =
+    
+    let processInput parsedCommand input ctx = 
+        setOutput parsedCommand
         let (cmds, _) = parseInput input ctx
-        let g ctx c =
+        
+        let g ctx c = 
             open_hvbox 0
             let results = processCommand ctx c
             print_flush ()

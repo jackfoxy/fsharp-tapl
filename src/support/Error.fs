@@ -14,7 +14,7 @@ open System
 open FSharp.Compatibility.OCaml.Format
 
 //
-exception Exit of int
+exception ExitException of int
 
 //
 type Info =
@@ -28,10 +28,9 @@ let dummyinfo = UNKNOWN
 let createInfo f l c = FI (f, l, c)
 
 let errf f =
-    print_flush ()
     open_vbox 0
     open_hvbox 0; f(); print_cut(); close_box(); print_newline();
-    raise (Exit 1)
+    raise (ExitException 1)
 
 let printInfo = function
     (* In the text of the book, file positions in error messages are replaced

@@ -16,50 +16,52 @@ See LICENSE.TXT for licensing details.
 
 namespace FSharpTapl
 
+open Ast
+open CommandLine
+open Compatability
+open Core
 open Microsoft.FSharp.Text
 open Microsoft.FSharp.Text.Lexing
-open FSharp.Compatibility.OCaml.Format
-open Ast
-open Core
-open CommandLine
 
-module TyarithLib =
+module TyarithLib = 
 
-    let parseInput (input : CommandLine.Source) =
+    let parseInput (input : CommandLine.Source) = 
 
-        let parseIt lexbuf =
+        let parseIt lexbuf = 
             Lexer.lineno := 1
 
-            try Parser.toplevel Lexer.main lexbuf
-            with Parsing.RecoverableParseError ->
+            try 
+                Parser.toplevel Lexer.main lexbuf
+            with Parsing.RecoverableParseError -> 
                 error (Lexer.info lexbuf) "Parse error"
-
         match input with
         | Source.Console s -> 
-            LexBuffer<char>.FromString s
+            LexBuffer<char>.FromString s 
             |> parseIt
-        | Source.File path ->
+        | Source.File path -> 
             use textReader = new System.IO.StreamReader(path)
             Lexer.filename := path
-            LexBuffer<char>.FromTextReader textReader
+            LexBuffer<char>.FromTextReader textReader 
             |> parseIt
         | _ -> invalidArg "can't get here" ""
     
-    let rec processCommand cmd =
+    let rec processCommand cmd = 
         match cmd with
-        | Eval (_, t) ->
+        | Eval(_, t) -> 
             let tyT = typeof t
             let t' = eval t
             printtmATerm true t'
             print_break 1 2
             pr ": "
             printty tyT
-            force_newline ()
+            force_newline()
             ()
-  
-    let processInput input =
+    
+    let processInput parsedCommand input = 
+        setOutput parsedCommand
         let cmds = parseInput input
-        let g c =
+        
+        let g c = 
             open_hvbox 0
             let results = processCommand c
             print_flush ()

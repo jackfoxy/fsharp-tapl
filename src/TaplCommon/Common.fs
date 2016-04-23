@@ -139,10 +139,86 @@ module List =
 
 open FSharp.Compatibility.OCaml.Format
 
+open CommandLine
+open System.IO
+
+module Compatability =
+
+    let mutable private output' : System.IO.TextWriter option = None
+
+    let mutable private formatter' : formatter option = None
+
+    let private makeOutput (parsedCommand : ParsedCommand) =
+
+        output' <-
+            match parsedCommand.Target with
+            | Target.File path -> 
+                new StreamWriter(path) :> TextWriter
+                |> TextWriter.Synchronized
+                |> Some 
+            | Target.Console -> Some Microsoft.FSharp.Core.Operators.stdout 
+
+        formatter' <- (output'.Value |> formatter_of_out_channel |> Some )
+
+    let setOutput (parsedCommand : ParsedCommand) =
+
+        match output' with
+        | None ->
+            makeOutput parsedCommand
+            
+        | Some x -> 
+            x.Dispose()
+            makeOutput parsedCommand
+
+    let getOutputFormatter() =
+        
+        match output' with
+        | None ->
+            invalidArg "" ""
+        | Some _ -> 
+            formatter'.Value
+
+    let pr s = 
+        (getOutputFormatter()
+        |> pp_print_string) s
+
+    let open_hovbox indent =
+        (getOutputFormatter()
+        |> pp_open_hovbox) indent
+        
+    let open_hvbox indent =
+        (getOutputFormatter()
+        |> pp_open_hvbox) indent
+
+    let print_int i = 
+        (getOutputFormatter()
+        |> pp_print_int) i
+
+    let close_box() =
+        (getOutputFormatter()
+        |> pp_close_box) ()
+
+    let print_break width offset =
+        (getOutputFormatter()
+        |> pp_print_break) width offset
+
+    let print_space() =
+        (getOutputFormatter()
+        |> pp_print_space) ()
+
+    let force_newline() =
+        (getOutputFormatter()
+        |> pp_force_newline) ()
+
+    let print_flush () =
+        let formatter = getOutputFormatter()
+        pp_print_flush formatter ()
+
 module Common =
 
     exception NoRuleAppliesException
     exception NotFoundException
+    exception ExitException of int
 
     let runMain (main : unit -> unit) =
 
@@ -155,12 +231,10 @@ module Common =
                     try 
                         main ()
                         0 
-                    with | Exit x -> x) ()
+                    with | ExitException x -> x) ()
             with e ->
                 printfn "%A" e
                 exit 2
-  
-        print_flush ()
-  
-        exit res
 
+        Compatability.print_flush ()
+        exit res

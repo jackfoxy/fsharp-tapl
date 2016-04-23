@@ -16,66 +16,67 @@ See LICENSE.TXT for licensing details.
 
 namespace FSharpTapl
 
+open Ast
+open CommandLine
+open Compatability
+open Core
 open Microsoft.FSharp.Text
 open Microsoft.FSharp.Text.Lexing
-open FSharp.Compatibility.OCaml.Format
-open Ast
-open Core
-open CommandLine
 
-module LetexerciseLib =
+module LetexerciseLib = 
 
-    let parseInput (input : CommandLine.Source) =
+    let parseInput (input : CommandLine.Source) = 
 
-        let parseIt lexbuf =
+        let parseIt lexbuf = 
             Lexer.lineno := 1
 
-            try Parser.toplevel Lexer.main lexbuf
-            with Parsing.RecoverableParseError ->
+            try 
+                Parser.toplevel Lexer.main lexbuf
+            with Parsing.RecoverableParseError -> 
                 error (Lexer.info lexbuf) "Parse error"
-
         match input with
         | Source.Console s -> 
-            LexBuffer<char>.FromString s
+            LexBuffer<char>.FromString s 
             |> parseIt
-        | Source.File path ->
+        | Source.File path -> 
             use textReader = new System.IO.StreamReader(path)
             Lexer.filename := path
-            LexBuffer<char>.FromTextReader textReader
+            LexBuffer<char>.FromTextReader textReader 
             |> parseIt
         | _ -> invalidArg "can't get here" ""
     
-    let prbindingty _ b =
-        match b with 
-        | NameBind -> () 
+    let prbindingty _ b = 
+        match b with
+        | NameBind -> ()
         | VarBind tyT -> 
             pr ": "
             printty tyT
-  
-    let rec processCommand ctx cmd =
+    
+    let rec processCommand ctx cmd = 
         match cmd with
-        | Eval (_, t) ->
+        | Eval(_, t) -> 
             let tyT = typeof ctx t
             let t' = eval ctx t
-
             printtmATerm true ctx t'
             print_break 1 2
             pr ": "
             printty tyT
-            force_newline ()
+            force_newline()
             ctx
-        | Bind (_, x, bind) ->
+        | Bind(_, x, bind) -> 
             pr x
             pr " "
             prbindingty ctx bind
-            force_newline ()
+            force_newline()
             addbinding ctx x bind
-  
-    let processInput input ctx =
+    
+    let processInput parsedCommand input ctx = 
+        setOutput parsedCommand
         let (cmds, _) = parseInput input ctx
-        let g ctx c =
-             open_hvbox 0
-             let results = processCommand ctx c
-             print_flush ()
-             results
+        
+        let g ctx c = 
+            open_hvbox 0
+            let results = processCommand ctx c
+            print_flush ()
+            results
         List.fold g ctx cmds

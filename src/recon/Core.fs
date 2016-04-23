@@ -12,6 +12,7 @@ module Core
 
 open Ast
 open FSharpTapl
+open Compatability
 
 (* ------------------------   EVALUATION  ------------------------ *)
   

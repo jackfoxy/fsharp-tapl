@@ -10,7 +10,7 @@ See LICENSE.TXT for licensing details.
 /// Syntax trees and associated support functions.
 module Ast
 
-open FSharp.Compatibility.OCaml.Format
+open FSharpTapl.Compatability
 
 (* ---------------------------------------------------------------------- *)
 (* Datatypes *)
@@ -59,7 +59,7 @@ let tmInfo t =
 
 let obox0 () = open_hvbox 0
 let obox () = open_hvbox 2
-let cbox () = close_box ()
+let cbox () = close_box()
 let ``break`` () = print_break 0 0
 
 let rec printtmTerm outer t =

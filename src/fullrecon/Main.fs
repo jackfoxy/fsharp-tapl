@@ -25,7 +25,7 @@ module console1 =
             reportEerror parsedCommand
         | input -> 
             let main () =
-                processInput input (emptycontext, uvargen, emptyconstr) |> ignore
+                processInput parsedCommand input (emptycontext, uvargen, emptyconstr) |> ignore
 
             Common.runMain main
             ()

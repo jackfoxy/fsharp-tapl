@@ -18,10 +18,10 @@ See LICENSE.TXT for licensing details.
 
 open Microsoft.FSharp.Text
 open Microsoft.FSharp.Text.Lexing
-open FSharp.Compatibility.OCaml.Format
 open Ast
 open Core
 open CommandLine
+open Compatability
 
 module ArithLib =
 
@@ -52,12 +52,12 @@ module ArithLib =
             printtmATerm true t'
             force_newline ()
   
-    let processInput input =
+    let processInput parsedCommand input =
+        setOutput parsedCommand
         let cmds = parseInput input
         let g c =
             open_hvbox 0
             let results = processCommand c
-            print_flush ()
             results
         List.iter g cmds
 

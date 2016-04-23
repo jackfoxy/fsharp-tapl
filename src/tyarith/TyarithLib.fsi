@@ -4,4 +4,4 @@ open CommandLine
 
 module TyarithLib =
 
-    val processInput : input : Source -> unit
+    val processInput : parsedCommand : ParsedCommand -> input : Source -> unit

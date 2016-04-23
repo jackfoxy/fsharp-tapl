@@ -110,8 +110,7 @@ module Tests =
                                     "true : Bool";
                                     "{true, false} : {Bool, Bool}";
                                     "true : Bool";
-                                    "(lambda x:<a:Bool,b:Bool>. x)";
-                                    "  : <a:Bool,b:Bool> -> <a:Bool, b:Bool>";
+                                    "(lambda x:<a:Bool,b:Bool>. x) : <a:Bool,b:Bool> -> <a:Bool, b:Bool>";
                                     "Counter :: *";
                                     "p : {get:Nat, inc:Unit->Counter}";
                                     "p1 : Counter";
@@ -193,8 +192,7 @@ module Tests =
                                 "3 : Nat";
                                 "T :: *";
                                 "(lambda f:T. lambda x:Nat. f (f x)) : T -> Nat -> Nat";
-                                "{*All Y. Y, lambda x:All Y. Y.x} as {Some X, X->X}";
-                                "  : {Some X, X->X}";
+                                "{*All Y. Y, lambda x:All Y. Y.x} as {Some X, X->X} : {Some X, X->X}";
                                 "{*Nat, {c=0,f=lambda x:Nat. (succ x)}} as {Some X, {c:X,f:X->Nat}}";
                                 "  : {Some X, {c:X,f:X->Nat}}";
                                 "1 : Nat";
@@ -224,8 +222,7 @@ module Tests =
 
         regression "fullfomsubref" File ["(lambda x:Bot. x) : Bot -> Bot";
                                     "(lambda x:Bot. x x) : Bot -> Bot";
-                                    "(lambda x:<a:Bool,b:Bool>. x)";
-                                    "  : <a:Bool,b:Bool> -> <a:Bool, b:Bool>";
+                                    "(lambda x:<a:Bool,b:Bool>. x) : <a:Bool,b:Bool> -> <a:Bool, b:Bool>";
                                     "(lambda x:Top. x) : Top -> Top";
                                     "(lambda x:Top. x) : Top";
                                     "(lambda x:Top. x) : Top -> Top";
@@ -254,8 +251,7 @@ module Tests =
                                     "(lambda f:T. lambda x:Nat. f (f x)) : T -> Nat -> Nat";
                                     "CounterRep :: *";
                                     "SetCounter :: *";
-                                    "setCounterClass : CounterRep ->";
-                                    "                  (Unit->SetCounter) -> Unit -> SetCounter";
+                                    "setCounterClass : CounterRep -> (Unit->SetCounter) -> Unit -> SetCounter";
                                     "newSetCounter : Unit -> SetCounter";
                                     "c : SetCounter";
                                     "1 : Nat";
@@ -298,8 +294,7 @@ module Tests =
                                     "dummyInstrCounter : InstrCounter";
                                     "setCounterClass : CounterRep -> (Source SetCounter) -> SetCounter";
                                     "newSetCounter : Unit -> SetCounter";
-                                    "instrCounterClass : InstrCounterRep ->";
-                                    "                    (Source InstrCounter) -> InstrCounter";
+                                    "instrCounterClass : InstrCounterRep -> (Source InstrCounter) -> InstrCounter";
                                     "newInstrCounter : Unit -> InstrCounter";
                                     "c : InstrCounter";
                                     "4 : Nat";
@@ -327,8 +322,7 @@ module Tests =
                                 "true : Bool";
                                 "(lambda x:Nat. (succ x)) : Nat -> Nat";
                                 "3 : Nat";
-                                "(lambda x:<a:Bool,b:Bool>. x)";
-                                "  : <a:Bool,b:Bool> -> <a:Bool, b:Bool>";
+                                "(lambda x:<a:Bool,b:Bool>. x) : <a:Bool,b:Bool> -> <a:Bool, b:Bool>";
                                 "Counter :: *";
                                 "p : Counter";
                                 "p1 : Counter";
@@ -357,8 +351,7 @@ module Tests =
                                 "(lambda f:T. lambda x:Nat. f (f x)) : T -> Nat -> Nat";
                                 "(lambda X. lambda x:X. x) : All X. X -> X";
                                 "(lambda x:All X. X->X. x) : (All X. X->X) -> (All X. X -> X)";
-                                "{*All Y. Y, lambda x:All Y. Y.x} as {Some X, X->X}";
-                                "  : {Some X, X->X}";
+                                "{*All Y. Y, lambda x:All Y. Y.x} as {Some X, X->X} : {Some X, X->X}";
                                 "{x=true, y=false} : {x:Bool, y:Bool}";
                                 "true : Bool";
                                 "{true, false} : {Bool, Bool}";
@@ -403,8 +396,7 @@ module Tests =
                                 "(lambda f:T. lambda x:Nat. f (f x)) : T -> Nat -> Nat";
                                 "(lambda X. lambda x:X. x) : All X. X -> X";
                                 "(lambda x:All X. X->X. x) : (All X. X->X) -> (All X. X -> X)";
-                                "{*All Y. Y, lambda x:All Y. Y.x} as {Some X, X->X}";
-                                "  : {Some X, X->X}";
+                                "{*All Y. Y, lambda x:All Y. Y.x} as {Some X, X->X} : {Some X, X->X}";
                                 "{x=true, y=false} : {x:Bool, y:Bool}";
                                 "true : Bool";
                                 "{true, false} : {Bool, Bool}";
@@ -444,8 +436,7 @@ module Tests =
 
         regression "fullref" File ["(lambda x:Bot. x) : Bot -> Bot";
                                 "(lambda x:Bot. x x) : Bot -> Bot";
-                                "(lambda x:<a:Bool,b:Bool>. x)";
-                                "  : <a:Bool,b:Bool> -> <a:Bool, b:Bool>";
+                                "(lambda x:<a:Bool,b:Bool>. x) : <a:Bool,b:Bool> -> <a:Bool, b:Bool>";
                                 "(lambda x:Top. x) : Top -> Top";
                                 "(lambda x:Top. x) : Top";
                                 "(lambda x:Top. x) : Top -> Top";
@@ -475,8 +466,7 @@ module Tests =
     [<Test>]
     let ``fullsimple file`` () =
 
-        regression "fullsimple" File ["(lambda x:<a:Bool,b:Bool>. x)";
-                                "  : <a:Bool,b:Bool> -> <a:Bool, b:Bool>";
+        regression "fullsimple" File ["(lambda x:<a:Bool,b:Bool>. x) : <a:Bool,b:Bool> -> <a:Bool, b:Bool>";
                                 "\"hello\" : String";
                                 "unit : Unit";
                                 "(lambda x:A. x) : A -> A";
@@ -579,8 +569,7 @@ module Tests =
                                 "3 : Nat";
                                 "T :: *";
                                 "(lambda f:T. lambda x:Nat. f (f x)) : T -> Nat -> Nat";
-                                "{*All Y. Y, lambda x:All Y. Y.x} as {Some X, X->X}";
-                                "  : {Some X, X->X}";
+                                "{*All Y. Y, lambda x:All Y. Y.x} as {Some X, X->X} : {Some X, X->X}";
                                 "{*Nat, {c=0,f=lambda x:Nat. (succ x)}} as {Some X, {c:X,f:X->Nat}}";
                                 "  : {Some X, {c:X,f:X->Nat}}";
                                 "1 : Nat";

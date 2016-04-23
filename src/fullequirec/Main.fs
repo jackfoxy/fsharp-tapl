@@ -10,7 +10,7 @@ See LICENSE.TXT for licensing details.
 namespace FSharpTapl
 
 open Ast
-open Fullequirec
+open FullequirecLib
 open CommandLine
 
 module console1 =
@@ -24,7 +24,7 @@ module console1 =
             reportEerror parsedCommand
         | input -> 
             let main () =
-                processInput input emptycontext |> ignore
+                processInput parsedCommand input emptycontext |> ignore
 
             Common.runMain main
             ()
