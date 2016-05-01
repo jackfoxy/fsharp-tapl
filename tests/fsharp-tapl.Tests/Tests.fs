@@ -429,7 +429,7 @@ module Tests =
     [<Test>]
     let ``fullrecon string`` () =
 
-        regression "fullrecon" (Console "lambda X. lambda x:X. x;") ["(lambda X. lambda x:X. x) : All X. X -> X";]
+        regression "fullrecon" (Console "(lambda x:Nat. succ (succ x)) (succ 0);") ["3 : Nat"; "    ";]
 
     [<Test>]
     let ``fullref file`` () =
@@ -649,7 +649,7 @@ module Tests =
     [<Test>]
     let ``recon string`` () =
 
-        regression "recon" (Console "(lambda x:Nat. pred (succ (succ x))) (succ 0);") ["2 : Nat";]
+        regression "recon" (Console "(lambda x:Nat. pred (succ (succ x))) (succ 0);") ["2 : Nat"; "    "]
 
     [<Test>]
     let ``reconbase file`` () =
