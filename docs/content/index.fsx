@@ -39,7 +39,7 @@ or input from command line
 Samples & documentation
 -----------------------
 
- * [TAPL to program reference](tutorial.html), sample tapl programs referenced by TAPL table of contents.
+ * [TAPL to program reference](taplReference.html), sample tapl programs referenced by TAPL table of contents.
 
  * [API Reference](reference/index.html) contains automatically generated documentation for all types, modules
    and functions in the libraries. This includes additional brief samples on using most of the

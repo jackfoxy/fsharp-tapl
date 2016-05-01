@@ -86,7 +86,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs-content", "docs-conten
 		docs\content\index.fsx = docs\content\index.fsx
 		docs\content\license.md = docs\content\license.md
 		docs\content\release-notes.md = docs\content\release-notes.md
-		docs\content\tutorial.fsx = docs\content\tutorial.fsx
+		docs\content\taplReference.fsx = docs\content\taplReference.fsx
 	EndProjectSection
 EndProject
 Global
