@@ -88,10 +88,6 @@
     <Reference Include="FsLexYacc.Runtime">
       <HintPath>..\..\lib\FsLexYacc\FsLexYacc.Runtime.dll</HintPath>
     </Reference>
-    <Reference Include="FSharp.Compatibility.OCaml.System">
-      <HintPath>..\packages\projects\FSharp.Compatibility.OCaml.System\lib\net40\FSharp.Compatibility.OCaml.System.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="mscorlib" />
     <Reference Include="System" />
     <Reference Include="System.Core" />

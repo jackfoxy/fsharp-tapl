@@ -29,8 +29,5 @@ module console1 =
 
             Common.runMain main
             ()
-        
-        | NoSource -> 
-            CommandLine.reportEerror parsedCommand
 
         0
