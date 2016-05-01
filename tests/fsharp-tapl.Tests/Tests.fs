@@ -676,6 +676,7 @@ module Tests =
 
         regression "simplebool" (Console "(lambda x:Bool. if x then false else true);") ["(lambda x:Bool. if x then false else true) : Bool -> Bool";]
 
+//test file empty
 //    [<Test>]
 //    let ``tyarith file`` () =
 //

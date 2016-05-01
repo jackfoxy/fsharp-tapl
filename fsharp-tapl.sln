@@ -63,6 +63,7 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "TaplCommon", "src\TaplCommo
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{634B35D9-486C-4DE8-8A7B-90A16A89C26C}"
 	ProjectSection(SolutionItems) = preProject
+		LICENSE.txt = LICENSE.txt
 		paket.dependencies = paket.dependencies
 		paket.lock = paket.lock
 		README.rst = README.rst
@@ -79,6 +80,14 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".build", ".build", "{EA7B97
 	EndProjectSection
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Tests.Regression", "tests\fsharp-tapl.Tests\Tests.Regression.fsproj", "{E53C46AF-9302-4754-960E-44FBE554B0C7}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs-content", "docs-content", "{06BCE86D-AEEF-477A-9E9F-BC4A90E281D1}"
+	ProjectSection(SolutionItems) = preProject
+		docs\content\index.fsx = docs\content\index.fsx
+		docs\content\license.md = docs\content\license.md
+		docs\content\release-notes.md = docs\content\release-notes.md
+		docs\content\tutorial.fsx = docs\content\tutorial.fsx
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -400,5 +409,6 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{EA7B97D9-9C74-4889-958A-CC1E871E2339} = {634B35D9-486C-4DE8-8A7B-90A16A89C26C}
+		{06BCE86D-AEEF-477A-9E9F-BC4A90E281D1} = {634B35D9-486C-4DE8-8A7B-90A16A89C26C}
 	EndGlobalSection
 EndGlobal

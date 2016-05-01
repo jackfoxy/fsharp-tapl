@@ -7,7 +7,7 @@
 fsharp-tapl
 ======================
 
-Documentation
+Code and Examples from Benjamin Pierce's ["Types and Programming Languages"](http://www.cis.upenn.edu/~bcpierce/tapl/), a comprehensive introduction to type systems and programming language theory. The code which accompanies the book is written in OCaml. This repository contains an F# port of that code, using FsLexYacc for lexing and parsing.
 
 <div class="row">
   <div class="span1"></div>
@@ -20,43 +20,39 @@ Documentation
   <div class="span1"></div>
 </div>
 
-Example
+Getting Started
 -------
 
-This example demonstrates using a function defined in this sample library.
+Run the build script to download dependencies, build all projects, and run regression tests.
 
-*)
-#r "fsharp-tapl.dll"
-open fsharp-tapl
+All projects are console apps. Run with file input 
 
-printfn "hello = %i" <| Library.hello 0
-
-(**
-Some more info
+``
+>cd bin\relase
+> untyped -i ..\..\untyped\test.f
+``
+or input from command line
+``
+>arith -s "iszero (pred (succ 0));"
+``
 
 Samples & documentation
 -----------------------
 
-The library comes with comprehensible documentation. 
-It can include tutorials automatically generated from `*.fsx` files in [the content folder][content]. 
-The API reference is automatically generated from Markdown comments in the library implementation.
-
- * [Tutorial](tutorial.html) contains a further explanation of this sample library.
+ * [TAPL to program reference](tutorial.html), sample tapl programs referenced by TAPL table of contents.
 
  * [API Reference](reference/index.html) contains automatically generated documentation for all types, modules
-   and functions in the library. This includes additional brief samples on using most of the
+   and functions in the libraries. This includes additional brief samples on using most of the
    functions.
  
 Contributing and copyright
 --------------------------
 
 The project is hosted on [GitHub][gh] where you can [report issues][issues], fork 
-the project and submit pull requests. If you're adding a new public API, please also 
-consider adding [samples][content] that can be turned into a documentation. You might
-also want to read the [library design notes][readme] to understand how it works.
+the project and submit pull requests.
 
-The library is available under Public Domain license, which allows modification and 
-redistribution for both commercial and non-commercial purposes. For more information see the 
+The TAPL code is copyrighted by Benjamin C. Pierce and available under license, which allows modification and 
+redistribution for both commercial and non-commercial purposes provided the copyright notice is retained. For more information see the 
 [License file][license] in the GitHub repository. 
 
   [content]: https://github.com/fsprojects/fsharp-tapl/tree/master/docs/content

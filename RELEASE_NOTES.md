@@ -1,13 +1,16 @@
 ### 1.0 - Unreleased
-* More awesome stuff coming
-* Added SourceLink for Source Indexing PDB
+* Uses latest FsLexYacc
+* Migrated solution to project scaffold format
+* Paket for dependencies
+* Isolated Ocaml compatability dependencies to pretty printing
+* Linted code and more idiomatic F# for most non-tapl specific code
+* Enhanced command line
+* Optional output to file
+* Optional input from command line
+* Regression tests.
 
-#### 0.5.1-beta - November 6 2013
-* Improved quality of solution-wide README.md files
- 
-#### 0.5.0-beta - October 29 2013
-* Improved quality of solution-wide README.md files
+* To Do:
+* Lib for experimental LexYacc
+* string output
+* tyarith input & test
 
-#### 0.0.1-beta - October 24 2013
-* Changed name from fsharp-project-scaffold to FSharp.ProjectScaffold
-* Initial release
