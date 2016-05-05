@@ -128,7 +128,7 @@ let substinty tyX tyT tyS =
   
 let applysubst constr tyT =
   List.fold
-    (fun tyS -> function | (TyId tyX, tyC2) -> substinty tyX tyC2 tyS) tyT
+    (fun tyS -> function | (TyId tyX, tyC2) -> substinty tyX tyC2 tyS | _ -> invalidArg "can't get here" "") tyT
     (List.rev constr)
   
 let substinconstr tyX tyT constr =

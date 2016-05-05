@@ -64,7 +64,7 @@ and printtyAType outer tyT =
   match tyT with
   | TyBool -> pr "Bool"
   | TyNat -> pr "Nat"
-  | tyT -> (pr "("; printtyType outer tyT; pr ")")
+//  | tyT -> (pr "("; printtyType outer tyT; pr ")") //this rule will never be matched; from original tapl
   
 let printty tyT = printtyType true tyT
   

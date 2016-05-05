@@ -106,7 +106,7 @@ let rec kindof ctx tyT =
        then error dummyinfo "star kind expected"
        else ();
        KnStar)
-  | _ -> KnStar
+//  | _ -> KnStar //this rule will never be matched; from original tapl
   
 let checkkindstar fi ctx tyT =
   let k = kindof ctx tyT

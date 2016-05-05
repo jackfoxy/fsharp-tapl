@@ -53,8 +53,6 @@ let rec typeof ctx t =
     match t with
     | TmVar (fi, i, _) ->
         getTypeFromContext fi ctx i
-    | (* Insert case(s) for TmLet here *) _ ->
-        raise <| System.NotImplementedException ()
     | TmAbs (_, x, tyT1, t2) ->
         let ctx' = addbinding ctx x (VarBind tyT1)
         let tyT2 = typeof ctx' t2
@@ -78,5 +76,7 @@ let rec typeof ctx t =
             if tyT2 = (typeof ctx t3) then tyT2
             else error fi "arms of conditional have different types"
         else error fi "guard of conditional not a boolean"
+    | (* Insert case(s) for TmLet here *) _ ->
+        raise <| System.NotImplementedException ()
   
 
