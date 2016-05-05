@@ -22,7 +22,7 @@ type Info =
     | UNKNOWN
     
 //
-type withinfo<'a> = {i : Info; v : 'a}
+type WithInfo<'a> = {i : Info; v : 'a}
 
 let dummyinfo = UNKNOWN
 let createInfo f l c = FI (f, l, c)
