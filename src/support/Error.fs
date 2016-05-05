@@ -18,7 +18,7 @@ exception ExitException of int
 
 //
 type Info =
-    | FI of string * int * int
+    | FI of File : string * Line : int * Character : int
     | UNKNOWN
     
 //
