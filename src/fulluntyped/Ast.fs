@@ -251,7 +251,7 @@ and printtmATerm outer ctx t =
          | [ f ] -> pf i f
          | f :: rest ->
              (pf i f;
-              pr ",";
+              pr ", ";
               if not outer then ``break`` () //if outer then print_space () else break ();
               p (i + 1) rest))
       in (pr "{"; open_hovbox 0; p 1 fields; pr "}"; cbox ())
