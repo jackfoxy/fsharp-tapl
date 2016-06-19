@@ -398,7 +398,7 @@ let rec typeOf ctx t =
        | TyRecord fieldtys ->
             match List.assoc l fieldtys with
             | Some x -> x
-            | None -> error fi ("label " ^ (l ^ " not found"))
+            | None -> error fi ("label " + (l + " not found"))
        | TyBot -> TyBot
        | _ -> error fi "Expected record type")
   | TmCase (fi, t, cases) ->
@@ -408,7 +408,7 @@ let rec typeOf ctx t =
               (fun (li, (_)) ->
                 match List.assoc li fieldtys with
                 | Some _ -> ()
-                | None -> error fi ("label " ^ (li ^ " not in type")))
+                | None -> error fi ("label " + (li + " not in type")))
               cases;
             let casetypes =
               List.map
@@ -416,7 +416,7 @@ let rec typeOf ctx t =
                     let ctx' =
                         match List.assoc li fieldtys with
                         | Some tyTi -> addBinding ctx xi (VarBind tyTi)
-                        | None -> error fi ("label " ^ (li ^ " not found"))
+                        | None -> error fi ("label " + (li + " not found"))
                     in typeShift (-1) (typeOf ctx' ti))
                 cases
             in List.fold (join ctx) TyBot casetypes)
@@ -443,7 +443,7 @@ let rec typeOf ctx t =
                 if subType ctx tyTi tyTiExpected
                 then tyT
                 else error fi "field does not have expected type"
-            | None -> error fi ("label " ^ (li ^ " not found"))
+            | None -> error fi ("label " + (li + " not found"))
        | _ -> error fi "Annotation is not a variant type")
   | TmAscribe (fi, t1, tyT) ->
       if subType ctx (typeOf ctx t1) tyT

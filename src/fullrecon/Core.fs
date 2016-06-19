@@ -80,7 +80,7 @@ type NextUvar =
 and UvarGenerator = unit -> NextUvar
 
 let uvargen =
-  let rec f n () = NextUVar ("?X" ^ (string n), f (n + 1)) in f 0
+  let rec f n () = NextUVar ("?X" + (string n), f (n + 1)) in f 0
   
 let rec recon (ctx : Context) nextuvar t =
   match t with
@@ -170,7 +170,7 @@ let unify fi (_ : Context) msg constr =
         then u rest
         else
           if occursin tyX tyS
-          then error fi (msg ^ ": circular constraints")
+          then error fi (msg + ": circular constraints")
           else
             List.append (u (substinconstr tyX tyS rest))
               [ ((TyId tyX), tyS) ]
@@ -179,7 +179,7 @@ let unify fi (_ : Context) msg constr =
         then u rest
         else
           if occursin tyX tyT
-          then error fi (msg ^ ": circular constraints")
+          then error fi (msg + ": circular constraints")
           else
             List.append (u (substinconstr tyX tyT rest))
               [ ((TyId tyX), tyT) ]

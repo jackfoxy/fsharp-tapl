@@ -89,7 +89,7 @@ let rec isNameBound (ctx : Context) x =
   
 let rec pickfreshname ctx x =
   if isNameBound ctx x
-  then pickfreshname ctx (x ^ "'")
+  then pickfreshname ctx (x + "'")
   else (((x, NameBind) :: ctx), x)
   
 let index2Name fi (ctx : Context) x =
@@ -102,7 +102,7 @@ let index2Name fi (ctx : Context) x =
   
 let rec name2Index fi (ctx : Context) x =
   match ctx with
-  | [] -> error fi ("Identifier " ^ (x ^ " is unbound"))
+  | [] -> error fi ("Identifier " + (x + " is unbound"))
   | (y, _) :: rest -> if y = x then 0 else 1 + (name2Index fi rest x)
   
 (* ---------------------------------------------------------------------- *)
@@ -224,10 +224,10 @@ let getTypeFromContext fi ctx i =
   | VarBind tyT -> tyT
   | TmAbbBind (_, (Some tyT)) -> tyT
   | TmAbbBind (_, None) ->
-      error fi ("No type recorded for variable " ^ (index2Name fi ctx i))
+      error fi ("No type recorded for variable " + (index2Name fi ctx i))
   | _ ->
       error fi
-        ("getTypeFromContext: Wrong kind of binding for variable " ^
+        ("getTypeFromContext: Wrong kind of binding for variable " +
            (index2Name fi ctx i))
   
 let rec makeTop k =
@@ -362,14 +362,14 @@ and printTyAType outer ctx tyT =
       then pr (index2Name dummyinfo ctx x)
       else
         pr
-          ("[bad index: " ^
-             ((string x) ^
-                ("/" ^
-                   ((string n) ^
-                      (" in {" ^
-                         ((List.fold (fun s (x, _) -> s ^ (" " ^ x)) ""
+          ("[bad index: " +
+             ((string x) +
+                ("/" +
+                   ((string n) +
+                      (" in {" +
+                         ((List.fold (fun s (x, _) -> s + (" " + x)) ""
                              ctx)
-                            ^ " }]"))))))
+                            + " }]"))))))
   | TyId b -> pr b
   | TyTop -> pr "Top"
   | TyBool -> pr "Bool"
@@ -518,14 +518,14 @@ and printTerm outer ctx t =
       then pr (index2Name fi ctx x)
       else
         pr
-          ("[bad index: " ^
-             ((string x) ^
-                ("/" ^
-                   ((string n) ^
-                      (" in {" ^
-                         ((List.fold (fun s (x, _) -> s ^ (" " ^ x)) ""
+          ("[bad index: " +
+             ((string x) +
+                ("/" +
+                   ((string n) +
+                      (" in {" +
+                         ((List.fold (fun s (x, _) -> s + (" " + x)) ""
                              ctx)
-                            ^ " }]"))))))
+                            + " }]"))))))
   | TmTrue _ -> pr "true"
   | TmFalse _ -> pr "false"
   | TmRecord (_, fields) ->
@@ -542,7 +542,7 @@ and printTerm outer ctx t =
               if outer then print_space () else ``break`` ();
               p (i + 1) rest))
       in (pr "{"; open_hovbox 0; p 1 fields; pr "}"; cbox ())
-  | TmString (_, s) -> pr ("\"" ^ (s ^ "\""))
+  | TmString (_, s) -> pr ("\"" + (s + "\""))
   | TmUnit _ -> pr "unit"
   | TmFloat (_, s) -> pr (string s)
   | TmZero _ -> pr "0"

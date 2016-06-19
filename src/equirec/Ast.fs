@@ -48,7 +48,7 @@ let rec isNameBound (ctx : Context) x =
   
 let rec pickfreshname ctx x =
   if isNameBound ctx x
-  then pickfreshname ctx (x ^ "'")
+  then pickfreshname ctx (x + "'")
   else (((x, NameBind) :: ctx), x)
   
 let index2Name fi (ctx : Context) x =
@@ -61,7 +61,7 @@ let index2Name fi (ctx : Context) x =
   
 let rec name2Index fi (ctx : Context) x =
   match ctx with
-  | [] -> error fi ("Identifier " ^ (x ^ " is unbound"))
+  | [] -> error fi ("Identifier " + (x + " is unbound"))
   | (y, _) :: rest -> if y = x then 0 else 1 + (name2Index fi rest x)
   
 (* ---------------------------------------------------------------------- *)
@@ -139,7 +139,7 @@ let getTypeFromContext fi ctx i =
   | VarBind tyT -> tyT
   | _ ->
       error fi
-        ("getTypeFromContext: Wrong kind of binding for variable " ^
+        ("getTypeFromContext: Wrong kind of binding for variable " +
            (index2Name fi ctx i))
   
 (* ---------------------------------------------------------------------- *)
@@ -203,14 +203,14 @@ and printTyAType outer ctx tyT =
       then pr (index2Name dummyinfo ctx x)
       else
         pr
-          ("[bad index: " ^
-             ((string x) ^
-                ("/" ^
-                   ((string n) ^
-                      (" in {" ^
-                         ((List.fold (fun s (x, _) -> s ^ (" " ^ x)) ""
+          ("[bad index: " +
+             ((string x) +
+                ("/" +
+                   ((string n) +
+                      (" in {" +
+                         ((List.fold (fun s (x, _) -> s + (" " + x)) ""
                              ctx)
-                            ^ " }]"))))))
+                            + " }]"))))))
   | tyT -> (pr "("; printTyType outer ctx tyT; pr ")")
   
 let printTy (ctx : Context) tyT = printTyType true ctx tyT
@@ -246,14 +246,14 @@ and printtmATerm outer ctx t =
       then pr (index2Name fi ctx x)
       else
         pr
-          ("[bad index: " ^
-             ((string x) ^
-                ("/" ^
-                   ((string n) ^
-                      (" in {" ^
-                         ((List.fold (fun s (x, _) -> s ^ (" " ^ x)) ""
+          ("[bad index: " +
+             ((string x) +
+                ("/" +
+                   ((string n) +
+                      (" in {" +
+                         ((List.fold (fun s (x, _) -> s + (" " + x)) ""
                              ctx)
-                            ^ " }]"))))))
+                            + " }]"))))))
   | t -> (pr "("; printTerm outer ctx t; pr ")")
   
 let printtm ctx t = printTerm true ctx t

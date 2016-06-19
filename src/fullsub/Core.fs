@@ -268,7 +268,7 @@ let rec typeOf ctx t =
        | TyRecord fieldtys ->
             match List.assoc l fieldtys with
             | Some x -> x
-            | None-> error fi ("label " ^ (l ^ " not found"))
+            | None-> error fi ("label " + (l + " not found"))
        | _ -> error fi "Expected record type")
   | TmLet (_, x, t1, t2) ->
       let tyT1 = typeOf ctx t1 in

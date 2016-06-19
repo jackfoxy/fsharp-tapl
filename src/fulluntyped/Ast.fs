@@ -59,7 +59,7 @@ let rec isName (ctx : Context) x =
   
 let rec pickfreshname ctx x =
   if isName ctx x
-  then pickfreshname ctx (x ^ "'")
+  then pickfreshname ctx (x + "'")
   else (((x, NameBind) :: ctx), x)
   
 let index2Name fi (ctx : Context) x =
@@ -72,7 +72,7 @@ let index2Name fi (ctx : Context) x =
   
 let rec name2Index fi (ctx : Context) x =
   match ctx with
-  | [] -> error fi ("Identifier " ^ (x ^ " is unbound"))
+  | [] -> error fi ("Identifier " + (x + " is unbound"))
   | (y, _) :: rest -> if y = x then 0 else 1 + (name2Index fi rest x)
   
 (* ---------------------------------------------------------------------- *)
@@ -237,14 +237,14 @@ and printtmATerm outer (ctx : Context) t =
       then pr (index2Name fi ctx x)
       else
         pr
-          ("[bad index: " ^
-             ((string x) ^
-                ("/" ^
-                   ((string n) ^
-                      (" in {" ^
-                         ((List.fold (fun s (x, _) -> s ^ (" " ^ x)) ""
+          ("[bad index: " +
+             ((string x) +
+                ("/" +
+                   ((string n) +
+                      (" in {" +
+                         ((List.fold (fun s (x, _) -> s + (" " + x)) ""
                              ctx)
-                            ^ " }]"))))))
+                            + " }]"))))))
   | TmRecord (_, fields) ->
       let pf i (li, ti) =
         (if li <> (string i) then (pr li; pr "=") else ();
@@ -260,7 +260,7 @@ and printtmATerm outer (ctx : Context) t =
               p (i + 1) rest))
       in (pr "{"; open_hovbox 0; p 1 fields; pr "}"; cbox ())
   | TmFloat (_, s) -> pr (string s)
-  | TmString (_, s) -> pr ("\"" ^ (s ^ "\""))
+  | TmString (_, s) -> pr ("\"" + (s + "\""))
   | TmZero _ -> pr "0"
   | TmSucc (_, t1) ->
       let rec f n t =

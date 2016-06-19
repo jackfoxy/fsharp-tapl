@@ -168,10 +168,10 @@ let rec getkind fi ctx i =
   | TyVarBind tyT -> kindOf ctx tyT
   | TyAbbBind (_, (Some knK)) -> knK
   | TyAbbBind (_, None) ->
-      error fi ("No kind recorded for variable " ^ (index2Name fi ctx i))
+      error fi ("No kind recorded for variable " + (index2Name fi ctx i))
   | _ ->
       error fi
-        ("getkind: Wrong kind of binding for variable " ^
+        ("getkind: Wrong kind of binding for variable " +
            (index2Name fi ctx i))
 and kindOf ctx tyT =
   match tyT with
@@ -392,7 +392,7 @@ let rec typeOf ctx t =
        | TyRecord fieldtys ->
             match List.assoc l fieldtys with
             | Some x -> x
-            | None -> error fi ("label " ^ (l ^ " not found"))
+            | None -> error fi ("label " + (l + " not found"))
        | _ -> error fi "Expected record type")
   | TmLet (_, x, t1, t2) ->
       let tyT1 = typeOf ctx t1 in

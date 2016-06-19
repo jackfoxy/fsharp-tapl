@@ -174,7 +174,7 @@ let rec typeOf ctx t =
               (fun (li, (_)) ->
                 match List.assoc li fieldtys with
                 | Some _ -> ()
-                | None -> error fi ("label " ^ (li ^ " not in type")))
+                | None -> error fi ("label " + (li + " not in type")))
               cases;
             let casetypes =
               List.map
@@ -182,7 +182,7 @@ let rec typeOf ctx t =
                    let tyTi =
                     match List.assoc li fieldtys with
                     | Some x -> x
-                    | None -> error fi ("label " ^ (li ^ " not found"))
+                    | None -> error fi ("label " + (li + " not found"))
                    
                    let ctx' = addBinding ctx xi (VarBind tyTi)
                    in typeShift (-1) (typeOf ctx' ti))
@@ -211,7 +211,7 @@ let rec typeOf ctx t =
                 if tyEqv ctx tyTi tyTiExpected
                 then tyT
                 else error fi "field does not have expected type"
-            with | Common.NotFoundException -> error fi ("label " ^ (li ^ " not found")))
+            with | Common.NotFoundException -> error fi ("label " + (li + " not found")))
        | _ -> error fi "Annotation is not a variant type")
   | TmVar (fi, i, _) -> getTypeFromContext fi ctx i
   | TmAbs (_, x, tyT1, t2) ->
@@ -254,7 +254,7 @@ let rec typeOf ctx t =
        | TyRecord fieldtys ->
             match List.assoc l fieldtys with
             | Some x -> x
-            | None -> error fi ("label " ^ (l ^ " not found"))
+            | None -> error fi ("label " + (l + " not found"))
        | _ -> error fi "Expected record type")
   | TmFloat _ -> TyFloat
   | TmTimesfloat (fi, t1, t2) ->

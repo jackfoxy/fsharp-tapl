@@ -275,10 +275,10 @@ let rec getkind fi ctx i =
   | TyVarBind tyT -> kindOf ctx tyT
   | TyAbbBind (_, (Some knK)) -> knK
   | TyAbbBind (_, None) ->
-      error fi ("No kind recorded for variable " ^ (index2Name fi ctx i))
+      error fi ("No kind recorded for variable " + (index2Name fi ctx i))
   | _ ->
       error fi
-        ("getkind: Wrong kind of binding for variable " ^
+        ("getkind: Wrong kind of binding for variable " +
            (index2Name fi ctx i))
 and kindOf ctx tyT =
   match tyT with
@@ -556,7 +556,7 @@ let rec typeOf ctx t =
        | TyRecord fieldtys ->
             match List.assoc l fieldtys with
             | Some x -> x
-            | None -> error fi ("label " ^ (l ^ " not found"))
+            | None -> error fi ("label " + (l + " not found"))
        | TyBot -> TyBot
        | _ -> error fi "Expected record type")
   | TmLet (_, x, t1, t2) ->
@@ -577,7 +577,7 @@ let rec typeOf ctx t =
               (fun (li, (_)) ->
                 match List.assoc li fieldtys with
                 | Some _ -> ()
-                | None -> error fi ("label " ^ (li ^ " not in type")))
+                | None -> error fi ("label " + (li + " not in type")))
               cases;
             let casetypes =
               List.map
@@ -586,7 +586,7 @@ let rec typeOf ctx t =
                     | Some tyTi ->
                        let ctx' = addBinding ctx xi (VarBind tyTi)
                        typeShift (-1) (typeOf ctx' ti)
-                    | None -> error fi ("label " ^ (li ^ " not found")))
+                    | None -> error fi ("label " + (li + " not found")))
                 cases
             in List.fold (join ctx) TyBot casetypes)
        | TyBot -> TyBot
@@ -600,7 +600,7 @@ let rec typeOf ctx t =
                 if subType ctx tyTi tyTiExpected
                 then tyT
                 else error fi "field does not have expected type"
-            | None -> error fi ("label " ^ (li ^ " not found"))
+            | None -> error fi ("label " + (li + " not found"))
        | _ -> error fi "Annotation is not a variant type")
   | TmAscribe (fi, t1, tyT) ->
       (checkkindstar fi ctx tyT;

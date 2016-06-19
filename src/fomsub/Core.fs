@@ -73,7 +73,7 @@ let rec getkind fi ctx i =
   | TyVarBind tyT -> kindOf ctx tyT
   | _ ->
       error fi
-        ("getkind: Wrong kind of binding for variable " ^
+        ("getkind: Wrong kind of binding for variable " +
            (index2Name fi ctx i))
 and kindOf ctx tyT =
   match tyT with
