@@ -59,39 +59,39 @@ module Tests =
     [<Test>]
     let ``equirec file`` () =
 
-        regression "equirec" File ["(lambda x:A. x) : A -> A";
-                                "(lambda f:Rec X. A->A. lambda x:A. f x) : (Rec X. A->A) -> A -> A";]
+        regression "equirec" File ["lambda x:A. x : A -> A";
+                                "lambda f:Rec X. A->A. lambda x:A. f x : (Rec X. A->A) -> A -> A";]
 
     [<Test>]
     let ``equirec string`` () =
 
-        regression "equirec" (Console "lambda x:A->B. x;") ["(lambda x:A->B. x) : (A->B) -> A -> B";]
+        regression "equirec" (Console "lambda x:A->B. x;") ["lambda x:A->B. x : (A->B) -> A -> B";]
 
     [<Test>]
     let ``fomega file`` () =
 
-        regression "fomega" File ["(lambda X. lambda x:X. x) : All X. X -> X";
-                            "(lambda x:All X. X->X. x) : (All X. X->X) -> (All X. X -> X)";]
+        regression "fomega" File ["lambda X. lambda x:X. x : All X. X -> X";
+                            "lambda x:All X. X->X. x : (All X. X->X) -> (All X. X -> X)";]
 
     [<Test>]
     let ``fomega string`` () =
 
-        regression "fomega" (Console "lambda X. lambda x:X->X. x;") ["(lambda X. lambda x:X->X. x) : All X. (X->X) -> X -> X";]
+        regression "fomega" (Console "lambda X. lambda x:X->X. x;") ["lambda X. lambda x:X->X. x : All X. (X->X) -> X -> X";]
 
     [<Test>]
     let ``fomsub file`` () =
 
-        regression "fomsub" File ["(lambda X. lambda x:X. x) : All X. X -> X";
-                            "(lambda x:All X. X->X. x) : (All X. X->X) -> (All X. X -> X)";
-                            "(lambda x:Top. x) : Top -> Top";
-                            "(lambda x:Top. x) : Top";
-                            "(lambda x:Top. x) : Top -> Top";
-                            "(lambda X<:Top->Top. lambda x:X. x x) : All X<:Top->Top. X -> Top";]
+        regression "fomsub" File ["lambda X. lambda x:X. x : All X. X -> X";
+                            "lambda x:All X. X->X. x : (All X. X->X) -> (All X. X -> X)";
+                            "lambda x:Top. x : Top -> Top";
+                            "lambda x:Top. x : Top";
+                            "lambda x:Top. x : Top -> Top";
+                            "lambda X<:Top->Top. lambda x:X. x x : All X<:Top->Top. X -> Top";]
 
     [<Test>]
     let ``fomsub string`` () =
 
-        regression "fomsub" (Console "(lambda x:Top->Top. x x) (lambda x:Top. x);") ["(lambda x:Top. x) : Top";]
+        regression "fomsub" (Console "(lambda x:Top->Top. x x) (lambda x:Top. x);") ["lambda x:Top. x : Top";]
 
     [<Test>]
     let ``fullequirec file`` () =
