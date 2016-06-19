@@ -40,7 +40,7 @@ let rec eval1 ctx t =
   | TmIf (_, (TmFalse _), _, t3) -> t3
   | TmIf (fi, t1, t2, t3) -> let t1' = eval1 ctx t1 in TmIf (fi, t1', t2, t3)
   | TmVar (fi, n, _) ->
-      (match getbinding fi ctx n with
+      (match getBinding fi ctx n with
        | TmAbbBind (t, _) -> t
        | _ -> raise Common.NoRuleAppliesException)
   | TmAscribe (_, v1, _) when isval ctx v1 -> v1
@@ -95,19 +95,19 @@ let rec eval1 ctx t =
   | TmFix (fi, t1) -> let t1' = eval1 ctx t1 in TmFix (fi, t1')
   | _ -> raise Common.NoRuleAppliesException
   
-let rec eval ctx t =
+let rec eval (ctx : Context) t =
   try let t' = eval1 ctx t in eval ctx t' with | Common.NoRuleAppliesException -> t
   
-let evalbinding ctx b =
+let evalBinding ctx b =
   match b with
   | TmAbbBind (t, tyT) -> let t' = eval ctx t in TmAbbBind (t', tyT)
   | bind -> bind
   
 let istyabb ctx i =
-  match getbinding dummyinfo ctx i with | TyAbbBind _ -> true | _ -> false
+  match getBinding dummyinfo ctx i with | TyAbbBind _ -> true | _ -> false
   
 let gettyabb ctx i =
-  match getbinding dummyinfo ctx i with
+  match getBinding dummyinfo ctx i with
   | TyAbbBind tyT -> tyT
   | _ -> raise Common.NoRuleAppliesException
   
@@ -117,27 +117,27 @@ let rec computety ctx tyT =
   | TyVar (i, _) when istyabb ctx i -> gettyabb ctx i
   | _ -> raise Common.NoRuleAppliesException
   
-let rec simplifyty ctx tyT =
-  try let tyT' = computety ctx tyT in simplifyty ctx tyT'
+let rec simplifyTy ctx tyT =
+  try let tyT' = computety ctx tyT in simplifyTy ctx tyT'
   with | Common.NoRuleAppliesException -> tyT
   
-let rec private tyeqv' seen ctx tyS tyT =
+let rec private tyEqv' seen ctx tyS tyT =
   (List.exists (fun x -> x = (tyS, tyT)) seen) ||
     (match (tyS, tyT) with
      | (TyString, TyString) -> true
      | (TyFloat, TyFloat) -> true
      | (TyRec (_, tyS1), _) ->
-         tyeqv' ((tyS, tyT) :: seen) ctx (typeSubstTop tyS tyS1) tyT
+         tyEqv' ((tyS, tyT) :: seen) ctx (typeSubstTop tyS tyS1) tyT
      | (_, TyRec (_, tyT1)) ->
-         tyeqv' ((tyS, tyT) :: seen) ctx tyS (typeSubstTop tyT tyT1)
+         tyEqv' ((tyS, tyT) :: seen) ctx tyS (typeSubstTop tyT tyT1)
      | (TyId b1, TyId b2) -> b1 = b2
      | (TyVar (i, _), _) when istyabb ctx i ->
-         tyeqv' seen ctx (gettyabb ctx i) tyT
+         tyEqv' seen ctx (gettyabb ctx i) tyT
      | (_, TyVar (i, _)) when istyabb ctx i ->
-         tyeqv' seen ctx tyS (gettyabb ctx i)
+         tyEqv' seen ctx tyS (gettyabb ctx i)
      | (TyVar (i, _), TyVar (j, _)) -> i = j
      | (TyArr (tyS1, tyS2), TyArr (tyT1, tyT2)) ->
-         (tyeqv' seen ctx tyS1 tyT1) && (tyeqv' seen ctx tyS2 tyT2)
+         (tyEqv' seen ctx tyS1 tyT1) && (tyEqv' seen ctx tyS2 tyT2)
      | (TyBool, TyBool) -> true
      | (TyNat, TyNat) -> true
      | (TyRecord fields1, TyRecord fields2) ->
@@ -145,86 +145,86 @@ let rec private tyeqv' seen ctx tyS tyT =
            (List.forall
               (fun (li2, tyTi2) ->
                     match List.assoc li2 fields1 with
-                    | Some tyTi1 -> tyeqv' seen ctx tyTi1 tyTi2
+                    | Some tyTi1 -> tyEqv' seen ctx tyTi1 tyTi2
                     | None -> false)
               fields2)
      | (TyVariant fields1, TyVariant fields2) ->
          ((List.length fields1) = (List.length fields2)) &&
            (List.forall2
               (fun (li1, tyTi1) (li2, tyTi2) ->
-                 (li1 = li2) && (tyeqv' seen ctx tyTi1 tyTi2))
+                 (li1 = li2) && (tyEqv' seen ctx tyTi1 tyTi2))
               fields1 fields2)
      | (TyUnit, TyUnit) -> true
      | _ -> false)
   
-let tyeqv ctx tyS tyT = tyeqv' [] ctx tyS tyT
+let tyEqv (ctx : Context) tyS tyT = tyEqv' [] ctx tyS tyT
   
 (* ------------------------   TYPING  ------------------------ *)
-let rec typeof ctx t =
+let rec typeOf ctx t =
   match t with
   | TmInert (_, tyT) -> tyT
   | TmString _ -> TyString
   | TmVar (fi, i, _) -> getTypeFromContext fi ctx i
   | TmAscribe (fi, t1, tyT) ->
-      if tyeqv ctx (typeof ctx t1) tyT
+      if tyEqv ctx (typeOf ctx t1) tyT
       then tyT
       else error fi "body of as-term does not have the expected type"
   | TmRecord (_, fields) ->
-      let fieldtys = List.map (fun (li, ti) -> (li, (typeof ctx ti))) fields
+      let fieldtys = List.map (fun (li, ti) -> (li, (typeOf ctx ti))) fields
       in TyRecord fieldtys
   | TmProj (fi, t1, l) ->
-      (match simplifyty ctx (typeof ctx t1) with
+      (match simplifyTy ctx (typeOf ctx t1) with
        | TyRecord fieldtys ->
             match List.assoc l fieldtys with
             | Some x -> x
             | None -> error fi ("label " ^ (l ^ " not found"))
        | _ -> error fi "Expected record type")
   | TmAbs (_, x, tyT1, t2) ->
-      let ctx' = addbinding ctx x (VarBind tyT1) in
-      let tyT2 = typeof ctx' t2 in TyArr (tyT1, typeShift (-1) tyT2)
+      let ctx' = addBinding ctx x (VarBind tyT1) in
+      let tyT2 = typeOf ctx' t2 in TyArr (tyT1, typeShift (-1) tyT2)
   | TmApp (fi, t1, t2) ->
-      let tyT1 = typeof ctx t1 in
-      let tyT2 = typeof ctx t2
+      let tyT1 = typeOf ctx t1 in
+      let tyT2 = typeOf ctx t2
       in
-        (match simplifyty ctx tyT1 with
+        (match simplifyTy ctx tyT1 with
          | TyArr (tyT11, tyT12) ->
-             if tyeqv ctx tyT2 tyT11
+             if tyEqv ctx tyT2 tyT11
              then tyT12
              else error fi "parameter type mismatch"
          | _ -> error fi "arrow type expected")
   | TmFloat _ -> TyFloat
   | TmTimesfloat (fi, t1, t2) ->
       if
-        (tyeqv ctx (typeof ctx t1) TyFloat) &&
-          (tyeqv ctx (typeof ctx t2) TyFloat)
+        (tyEqv ctx (typeOf ctx t1) TyFloat) &&
+          (tyEqv ctx (typeOf ctx t2) TyFloat)
       then TyFloat
       else error fi "argument of timesfloat is not a number"
   | TmTrue _ -> TyBool
   | TmFalse _ -> TyBool
   | TmIf (fi, t1, t2, t3) ->
-      if tyeqv ctx (typeof ctx t1) TyBool
+      if tyEqv ctx (typeOf ctx t1) TyBool
       then
-        (let tyT2 = typeof ctx t2
+        (let tyT2 = typeOf ctx t2
          in
-           if tyeqv ctx tyT2 (typeof ctx t3)
+           if tyEqv ctx tyT2 (typeOf ctx t3)
            then tyT2
            else error fi "arms of conditional have different types")
       else error fi "guard of conditional not a boolean"
   | TmZero _ -> TyNat
   | TmSucc (fi, t1) ->
-      if tyeqv ctx (typeof ctx t1) TyNat
+      if tyEqv ctx (typeOf ctx t1) TyNat
       then TyNat
       else error fi "argument of succ is not a number"
   | TmPred (fi, t1) ->
-      if tyeqv ctx (typeof ctx t1) TyNat
+      if tyEqv ctx (typeOf ctx t1) TyNat
       then TyNat
       else error fi "argument of pred is not a number"
   | TmIsZero (fi, t1) ->
-      if tyeqv ctx (typeof ctx t1) TyNat
+      if tyEqv ctx (typeOf ctx t1) TyNat
       then TyBool
       else error fi "argument of iszero is not a number"
   | TmCase (fi, t, cases) ->
-      (match simplifyty ctx (typeof ctx t) with
+      (match simplifyTy ctx (typeOf ctx t) with
        | TyVariant fieldtys ->
            (List.iter
               (fun (li, (_)) ->
@@ -237,8 +237,8 @@ let rec typeof ctx t =
                 (fun (li, (xi, ti)) ->
                     match List.assoc li fieldtys with
                     | Some tyTi ->
-                       let ctx' = addbinding ctx xi (VarBind tyTi)
-                       typeShift (-1) (typeof ctx' ti)
+                       let ctx' = addBinding ctx xi (VarBind tyTi)
+                       typeShift (-1) (typeOf ctx' ti)
                     | None -> error fi ("label " ^ (li ^ " not found")))
                 cases in
             let tyT1 = List.head casetypes in
@@ -246,33 +246,33 @@ let rec typeof ctx t =
             in
               (List.iter
                  (fun tyTi ->
-                    if not (tyeqv ctx tyTi tyT1)
+                    if not (tyEqv ctx tyTi tyT1)
                     then error fi "fields do not have the same type"
                     else ())
                  restTy;
                tyT1))
        | _ -> error fi "Expected variant type")
   | TmTag (fi, li, ti, tyT) ->
-       match simplifyty ctx tyT with
+       match simplifyTy ctx tyT with
        | TyVariant fieldtys ->
             match List.assoc li fieldtys with
             | Some tyTiExpected ->
-                let tyTi = typeof ctx ti
-                if tyeqv ctx tyTi tyTiExpected then tyT
+                let tyTi = typeOf ctx ti
+                if tyEqv ctx tyTi tyTiExpected then tyT
                 else error fi "field does not have expected type"
             | None -> error fi ("label " ^ (li ^ " not found"))
        | _ -> error fi "Annotation is not a variant type"
   | TmLet (_, x, t1, t2) ->
-      let tyT1 = typeof ctx t1 in
-      let ctx' = addbinding ctx x (VarBind tyT1)
-      in typeShift (-1) (typeof ctx' t2)
+      let tyT1 = typeOf ctx t1 in
+      let ctx' = addBinding ctx x (VarBind tyT1)
+      in typeShift (-1) (typeOf ctx' t2)
   | TmUnit _ -> TyUnit
   | TmFix (fi, t1) ->
-      let tyT1 = typeof ctx t1
+      let tyT1 = typeOf ctx t1
       in
-        (match simplifyty ctx tyT1 with
+        (match simplifyTy ctx tyT1 with
          | TyArr (tyT11, tyT12) ->
-             if tyeqv ctx tyT12 tyT11
+             if tyEqv ctx tyT12 tyT11
              then tyT12
              else error fi "result of body not compatible with domain"
          | _ -> error fi "arrow type expected")

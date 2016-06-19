@@ -123,7 +123,7 @@ Command :
   | Term 
       { fun ctx -> (let t = $1 ctx in Eval(tmInfo t,t)),ctx }
   | LCID Binder
-      { fun ctx -> ((Bind($1.i,$1.v,$2 ctx)), addname ctx $1.v) }
+      { fun ctx -> ((Bind($1.i,$1.v,$2 ctx)), addName ctx $1.v) }
 
 /* Right-hand sides of top-level bindings */
 Binder :
@@ -188,11 +188,11 @@ Term :
       { $1 }
   | LAMBDA LCID COLON Type DOT Term 
       { fun ctx ->
-          let ctx1 = addname ctx $2.v in
+          let ctx1 = addName ctx $2.v in
           TmAbs($1, $2.v, $4 ctx, $6 ctx1) }
   | LAMBDA USCORE COLON Type DOT Term 
       { fun ctx ->
-          let ctx1 = addname ctx "_" in
+          let ctx1 = addName ctx "_" in
           TmAbs($1, "_", $4 ctx, $6 ctx1) }
 
 AppTerm :
@@ -210,7 +210,7 @@ ATerm :
       { $2 } 
   | LCID 
       { fun ctx ->
-          TmVar($1.i, name2index $1.i ctx $1.v, ctxlength ctx) }
+          TmVar($1.i, name2Index $1.i ctx $1.v, ctxLength ctx) }
   | LCURLY Fields RCURLY
       { fun ctx ->
           TmRecord($1, $2 ctx 1) }

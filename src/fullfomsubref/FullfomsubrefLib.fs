@@ -49,17 +49,17 @@ module FullfomsubrefLib =
         match b with
         | NameBind -> NameBind
         | TyVarBind tyS -> 
-            kindof ctx tyS |> ignore
+            kindOf ctx tyS |> ignore
             TyVarBind tyS
-        | TyAbbBind(tyT, None) -> TyAbbBind(tyT, Some(kindof ctx tyT))
+        | TyAbbBind(tyT, None) -> TyAbbBind(tyT, Some(kindOf ctx tyT))
         | VarBind tyT -> VarBind tyT
-        | TmAbbBind(t, None) -> TmAbbBind(t, Some(typeof ctx t))
+        | TmAbbBind(t, None) -> TmAbbBind(t, Some(typeOf ctx t))
         | TmAbbBind(t, (Some tyT)) -> 
-            let tyT' = typeof ctx t
-            if subtype ctx tyT' tyT then TmAbbBind(t, Some tyT)
+            let tyT' = typeOf ctx t
+            if subType ctx tyT' tyT then TmAbbBind(t, Some tyT)
             else error fi "Type of binding does not match declared type"
         | TyAbbBind(tyT, (Some knK)) -> 
-            let knK' = kindof ctx tyT
+            let knK' = kindOf ctx tyT
             if knK = knK' then TyAbbBind(tyT, Some knK)
             else error fi "Kind of binding does not match declared kind"
     
@@ -68,20 +68,20 @@ module FullfomsubrefLib =
         | NameBind -> ()
         | TyVarBind tyS -> 
             (pr "<: "
-             printty ctx tyS)
+             printTy ctx tyS)
         | VarBind tyT -> 
             (pr ": "
-             printty ctx tyT)
+             printTy ctx tyT)
         | TyAbbBind(tyT, knKopt) -> 
             pr ":: "
             match knKopt with
-            | None -> printkn ctx (kindof ctx tyT)
-            | Some knK -> printkn ctx knK
+            | None -> printKn ctx (kindOf ctx tyT)
+            | Some knK -> printKn ctx knK
         | TmAbbBind(t, tyTopt) -> 
             pr ": "
             match tyTopt with
-            | None -> printty ctx (typeof ctx t)
-            | Some tyT -> printty ctx tyT
+            | None -> printTy ctx (typeOf ctx t)
+            | Some tyT -> printTy ctx tyT
     
     let rec processInput parsedCommand input (ctx, store) = 
         setOutput parsedCommand
@@ -98,24 +98,24 @@ module FullfomsubrefLib =
         match cmd with
         | Import f -> processInput parsedCommand (Source.File f) (ctx, store)
         | Eval(_, t) -> 
-            let tyT = typeof ctx t
+            let tyT = typeOf ctx t
             let (t', store) = eval ctx store t
-            printtmATerm true ctx t'
+            printTerm true ctx t'
             print_break 1 2
             pr ": "
-            printty ctx tyT
+            printTy ctx tyT
             force_newline()
             (ctx, store)
         | Bind(fi, x, bind) -> 
             let bind = checkbinding fi ctx bind
-            let (bind', store') = evalbinding ctx store bind
+            let (bind', store') = evalBinding ctx store bind
             pr x
             pr " "
             prbindingty ctx bind'
             force_newline()
-            ((addbinding ctx x bind'), (shiftstore 1 store'))
+            ((addBinding ctx x bind'), (shiftStore 1 store'))
         | SomeBind(fi, tyX, x, t) -> 
-            let tyT = typeof ctx t
+            let tyT = typeOf ctx t
             match lcst ctx tyT with
             | TySome(_, tyBound, tyBody) -> 
                 let (t', store') = eval ctx store t
@@ -125,13 +125,13 @@ module FullfomsubrefLib =
                     | TmPack(_, _, t12, _) -> TmAbbBind(termShift 1 t12, Some tyBody)
                     | _ -> VarBind tyBody
                 
-                let ctx1 = addbinding ctx tyX (TyVarBind tyBound)
-                let ctx2 = addbinding ctx1 x b
+                let ctx1 = addBinding ctx tyX (TyVarBind tyBound)
+                let ctx2 = addBinding ctx1 x b
                 pr tyX
                 force_newline()
                 pr x
                 pr " : "
-                printty ctx1 tyBody
+                printTy ctx1 tyBody
                 force_newline()
                 (ctx2, store')
             | _ -> error fi "existential type expected"

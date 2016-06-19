@@ -32,33 +32,37 @@ type Term =
   | TmIsZero of Info * Term
   | TmLet of Info * string * Term * Term
 
-type Binding = | NameBind | TmAbbBind of Term
+type Binding = 
+    | NameBind 
+    | TmAbbBind of Term
 
 type Context = (string * Binding) list
 
-type Command = | Eval of Info * Term | Bind of Info * string * Binding
+type Command = 
+    | Eval of Info * Term 
+    | Bind of Info * string * Binding
 
 (* ---------------------------------------------------------------------- *)
 (* Context management *)
-let emptycontext = []
+let emptyContext : Context = []
   
-let ctxlength ctx = List.length ctx
+let ctxLength (ctx : Context) = List.length ctx
   
-let addbinding ctx x bind = (x, bind) :: ctx
+let addBinding (ctx : Context) x bind = (x, bind) :: ctx
   
-let addname ctx x = addbinding ctx x NameBind
+let addName ctx x = addBinding ctx x NameBind
   
-let rec isnamebound ctx x =
+let rec isName (ctx : Context) x =
   match ctx with
   | [] -> false
-  | (y, _) :: rest -> if y = x then true else isnamebound rest x
+  | (y, _) :: rest -> if y = x then true else isName rest x
   
 let rec pickfreshname ctx x =
-  if isnamebound ctx x
+  if isName ctx x
   then pickfreshname ctx (x ^ "'")
   else (((x, NameBind) :: ctx), x)
   
-let index2name fi ctx x =
+let index2Name fi (ctx : Context) x =
   try let (xn, _) = List.item x ctx in xn
   with
   | Failure _ ->
@@ -66,10 +70,10 @@ let index2name fi ctx x =
         Printf.sprintf "Variable lookup failure: offset: %d, ctx size: %d"
       in error fi (msg x (List.length ctx))
   
-let rec name2index fi ctx x =
+let rec name2Index fi (ctx : Context) x =
   match ctx with
   | [] -> error fi ("Identifier " ^ (x ^ " is unbound"))
-  | (y, _) :: rest -> if y = x then 0 else 1 + (name2index fi rest x)
+  | (y, _) :: rest -> if y = x then 0 else 1 + (name2Index fi rest x)
   
 (* ---------------------------------------------------------------------- *)
 (* Shifting *)
@@ -119,7 +123,7 @@ let termSubstTop s t = termShift (-1) (termSubst 0 (termShift 1 s) t)
   
 (* ---------------------------------------------------------------------- *)
 (* Context management (continued) *)
-let rec getbinding fi ctx i =
+let rec getBinding fi (ctx : Context) i =
   try let (_, bind) = List.item i ctx in bindingshift (i + 1) bind
   with
   | Failure _ ->
@@ -201,7 +205,7 @@ let rec printtmTerm outer ctx t =
        print_space ();
        pr "in";
        print_space ();
-       printtmTerm false (addname ctx x) t2;
+       printtmTerm false (addName ctx x) t2;
        cbox ())
   | t -> printtmAppTerm outer ctx t
 and printtmAppTerm outer ctx t =
@@ -224,13 +228,13 @@ and printtmPathTerm outer ctx t =
   match t with
   | TmProj (_, t1, l) -> (printtmATerm false ctx t1; pr "."; pr l)
   | t -> printtmATerm outer ctx t
-and printtmATerm outer ctx t =
+and printtmATerm outer (ctx : Context) t =
   match t with
   | TmTrue _ -> pr "true"
   | TmFalse _ -> pr "false"
   | TmVar (fi, x, n) ->
-      if (ctxlength ctx) = n
-      then pr (index2name fi ctx x)
+      if (ctxLength ctx) = n
+      then pr (index2Name fi ctx x)
       else
         pr
           ("[bad index: " ^
@@ -269,7 +273,9 @@ and printtmATerm outer ctx t =
   
 let printtm ctx t = printtmTerm true ctx t
   
-let prbinding ctx b =
-  match b with | NameBind -> () | TmAbbBind t -> (pr "= "; printtm ctx t)
+let prBinding ctx b =
+  match b with 
+  | NameBind -> () 
+  | TmAbbBind t -> (pr "= "; printtm ctx t)
   
 

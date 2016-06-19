@@ -50,20 +50,20 @@ module FomsubLib =
         | NameBind -> ()
         | VarBind tyT -> 
             (pr ": "
-             printty ctx tyT)
+             printTy ctx tyT)
         | TyVarBind tyS -> 
             (pr "<: "
-             printty ctx tyS)
+             printTy ctx tyS)
     
     let rec processCommand ctx cmd = 
         match cmd with
         | Eval(_, t) -> 
-            let tyT = typeof ctx t
+            let tyT = typeOf ctx t
             let t' = eval ctx t
-            printtmATerm true ctx t'
+            printTerm true ctx t'
             print_break 1 2
             pr ": "
-            printty ctx tyT
+            printTy ctx tyT
             force_newline()
             ctx
         | Bind(_, x, bind) -> 
@@ -71,7 +71,7 @@ module FomsubLib =
             pr " "
             prbindingty ctx bind
             force_newline()
-            addbinding ctx x bind
+            addBinding ctx x bind
     
     let processInput parsedCommand input ctx = 
         setOutput parsedCommand

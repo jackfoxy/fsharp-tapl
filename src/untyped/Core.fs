@@ -25,7 +25,7 @@ let rec eval1 ctx t =
   | TmApp (fi, t1, t2) -> let t1' = eval1 ctx t1 in TmApp (fi, t1', t2)
   | _ -> raise Common.NoRuleAppliesException
   
-let rec eval ctx t =
+let rec eval (ctx : Context) t =
   try let t' = eval1 ctx t in eval ctx t' with | Common.NoRuleAppliesException -> t
   
 

@@ -56,6 +56,7 @@
   <Import Project="$(FSharpTargetsPath)" Condition="Exists('$(FSharpTargetsPath)')" />
   <Import Project="..\..\lib\FsLexYacc\FsLexYacc.targets" />
   <ItemGroup>
+    <Compile Include="Ast.fsi" />
     <Compile Include="Ast.fs" />
     <None Include="Parser.fsi" />
     <Compile Include="Parser.fs" />
@@ -66,6 +67,7 @@
     <FsLex Include="Lexer.fsl">
       <OtherFlags>--unicode</OtherFlags>
     </FsLex>
+    <Compile Include="Core.fsi" />
     <Compile Include="Core.fs" />
     <Compile Include="FullfomsubrefLib.fsi" />
     <Compile Include="FullfomsubrefLib.fs" />

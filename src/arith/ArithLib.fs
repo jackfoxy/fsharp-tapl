@@ -49,7 +49,7 @@ module ArithLib =
         match cmd with
         | Eval (_, t) ->
             let t' = eval t
-            printtmATerm true t'
+            printTerm t'
             force_newline ()
   
     let processInput parsedCommand input =

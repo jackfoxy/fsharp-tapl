@@ -22,10 +22,10 @@ module console1 =
 
         match parsedCommand.Source with
         | NoSource -> 
-            reportEerror parsedCommand
+            reportError parsedCommand
         | input -> 
             let main () =
-                processInput parsedCommand input (emptycontext, uvargen, emptyconstr) |> ignore
+                processInput parsedCommand input (emptyContext, uvargen, emptyConstr) |> ignore
 
             Common.runMain main
             ()

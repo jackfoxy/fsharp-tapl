@@ -55,9 +55,9 @@ module UntypedLib =
         | Bind(_, x, bind) -> 
             pr x
             pr " "
-            prbinding ctx bind
+            prBinding ctx bind
             force_newline()
-            addbinding ctx x bind
+            addBinding ctx x bind
     
     let processInput parsedCommand input ctx = 
         setOutput parsedCommand

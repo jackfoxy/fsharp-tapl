@@ -45,16 +45,16 @@ module Tests =
     [<Test>]
     let ``bot file`` () =
 
-        regression "bot" File ["(lambda x:Top. x) : Top -> Top";
-                            "(lambda x:Top. x) : Top";
-                            "(lambda x:Top. x) : Top -> Top";
-                            "(lambda x:Bot. x) : Bot -> Bot";
-                            "(lambda x:Bot. x x) : Bot -> Bot";]
+        regression "bot" File ["lambda x:Top. x : Top -> Top";
+                            "lambda x:Top. x : Top";
+                            "lambda x:Top. x : Top -> Top";
+                            "lambda x:Bot. x : Bot -> Bot";
+                            "lambda x:Bot. x x : Bot -> Bot";]
 
     [<Test>]
     let ``bot string`` () =
 
-        regression "bot" (Console "(lambda x:Bot->Top. x) (lambda x:Top. x);") ["(lambda x:Top. x) : Bot -> Top";]
+        regression "bot" (Console "(lambda x:Bot->Top. x) (lambda x:Top. x);") ["lambda x:Top. x : Bot -> Top";]
 
     [<Test>]
     let ``equirec file`` () =

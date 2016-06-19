@@ -62,34 +62,34 @@ let obox () = open_hvbox 2
 let cbox () = close_box()
 let ``break`` () = print_break 0 0
 
-let rec printtmTerm outer t =
+let rec printTerm t =
     match t with
     | TmIf (_, t1, t2, t3) ->
         obox0 ()
         pr "if "
-        printtmTerm false t1
+        printTerm t1
         print_space ()
         pr "then "
-        printtmTerm false t2
+        printTerm t2
         print_space ()
         pr "else "
-        printtmTerm false t3
+        printTerm t3
         cbox ()
     | t ->
-        printtmAppTerm outer t
+        printtmAppTerm t
 
-and printtmAppTerm outer t =
+and printtmAppTerm t =
     match t with
     | TmPred (_, t1) ->
         pr "pred "
-        printtmATerm false t1
+        printtmATerm t1
     | TmIsZero (_, t1) ->
         pr "iszero "
-        printtmATerm false t1
+        printtmATerm t1
     | t ->
-        printtmATerm outer t
+        printtmATerm t
 
-and printtmATerm outer t =
+and printtmATerm t =
     match t with
     | TmTrue _ ->
         pr "true"
@@ -106,15 +106,12 @@ and printtmATerm outer t =
                 f (n + 1) s
             | _ ->
                 pr "(succ "
-                printtmATerm false t1
+                printtmATerm t1
                 pr ")"
 
         f 1 t1
     | t ->
         pr "("
-        printtmTerm outer t
+        printTerm t
         pr ")"
-  
-let printtm t =
-    printtmTerm true t
-  
+ 

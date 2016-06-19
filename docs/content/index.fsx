@@ -44,6 +44,8 @@ Samples & documentation
  * [API Reference](reference/index.html) contains automatically generated documentation for all types, modules
    and functions in the libraries. This includes additional brief samples on using most of the
    functions.
+
+ * [Implementation Notes](notes.html)
  
 Contributing and copyright
 --------------------------

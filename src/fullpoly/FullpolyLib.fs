@@ -51,10 +51,10 @@ module FullpolyLib =
         | TyVarBind -> TyVarBind
         | TyAbbBind tyT -> TyAbbBind tyT
         | VarBind tyT -> VarBind tyT
-        | TmAbbBind(t, None) -> TmAbbBind(t, Some(typeof ctx t))
+        | TmAbbBind(t, None) -> TmAbbBind(t, Some(typeOf ctx t))
         | TmAbbBind(t, (Some tyT)) -> 
-            let tyT' = typeof ctx t
-            if tyeqv ctx tyT' tyT then TmAbbBind(t, Some tyT)
+            let tyT' = typeOf ctx t
+            if tyEqv ctx tyT' tyT then TmAbbBind(t, Some tyT)
             else error fi "Type of binding does not match declared type"
     
     let prbindingty ctx b = 
@@ -63,36 +63,36 @@ module FullpolyLib =
         | TyVarBind -> ()
         | VarBind tyT -> 
             (pr ": "
-             printty ctx tyT)
+             printTy ctx tyT)
         | TyAbbBind _ -> pr ":: *"
         | TmAbbBind(t, tyTopt) -> 
             pr ": "
             match tyTopt with
-            | None -> printty ctx (typeof ctx t)
-            | Some tyT -> printty ctx tyT
+            | None -> printTy ctx (typeOf ctx t)
+            | Some tyT -> printTy ctx tyT
     
     let rec processCommand ctx cmd = 
         match cmd with
         | Eval(_, t) -> 
-            let tyT = typeof ctx t
+            let tyT = typeOf ctx t
             let t' = eval ctx t
-            printtmATerm true ctx t'
+            printTerm true ctx t'
             print_break 1 2
             pr ": "
-            printty ctx tyT
+            printTy ctx tyT
             force_newline()
             ctx
         | Bind(fi, x, bind) -> 
             let bind = checkbinding fi ctx bind
-            let bind' = evalbinding ctx bind
+            let bind' = evalBinding ctx bind
             pr x
             pr " "
             prbindingty ctx bind'
             force_newline()
-            addbinding ctx x bind'
+            addBinding ctx x bind'
         | SomeBind(fi, tyX, x, t) -> 
-            let tyT = typeof ctx t
-            match simplifyty ctx tyT with
+            let tyT = typeOf ctx t
+            match simplifyTy ctx tyT with
             | TySome(_, tyBody) -> 
                 let t' = eval ctx t
                 
@@ -101,13 +101,13 @@ module FullpolyLib =
                     | TmPack(_, _, t12, _) -> TmAbbBind(termShift 1 t12, Some tyBody)
                     | _ -> VarBind tyBody
                 
-                let ctx1 = addbinding ctx tyX TyVarBind
-                let ctx2 = addbinding ctx1 x b
+                let ctx1 = addBinding ctx tyX TyVarBind
+                let ctx2 = addBinding ctx1 x b
                 pr tyX
                 force_newline()
                 pr x
                 pr " : "
-                printty ctx1 tyBody
+                printTy ctx1 tyBody
                 force_newline()
                 ctx2
             | _ -> error fi "existential type expected"

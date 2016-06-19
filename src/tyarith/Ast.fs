@@ -58,15 +58,15 @@ let obox () = open_hvbox 2
 let cbox () = close_box()
 let ``break`` () = print_break 0 0
   
-let rec printtyType outer tyT =
-  match tyT with | tyT -> printtyAType outer tyT
-and printtyAType outer tyT =
+let rec printTyType outer tyT =
+  match tyT with | tyT -> printTyAType outer tyT
+and printTyAType outer tyT =
   match tyT with
   | TyBool -> pr "Bool"
   | TyNat -> pr "Nat"
-//  | tyT -> (pr "("; printtyType outer tyT; pr ")") //this rule will never be matched; from original tapl
+//  | tyT -> (pr "("; printTyType outer tyT; pr ")") //this rule will never be matched; from original tapl
   
-let printty tyT = printtyType true tyT
+let printTy tyT = printTyType true tyT
   
 let rec printtmTerm outer t =
   match t with
@@ -84,10 +84,10 @@ let rec printtmTerm outer t =
   | t -> printtmAppTerm outer t
 and printtmAppTerm outer t =
   match t with
-  | TmPred (_, t1) -> (pr "pred "; printtmATerm false t1)
-  | TmIsZero (_, t1) -> (pr "iszero "; printtmATerm false t1)
-  | t -> printtmATerm outer t
-and printtmATerm outer t =
+  | TmPred (_, t1) -> (pr "pred "; printTerm false t1)
+  | TmIsZero (_, t1) -> (pr "iszero "; printTerm false t1)
+  | t -> printTerm outer t
+and printTerm outer t =
   match t with
   | TmTrue _ -> pr "true"
   | TmFalse _ -> pr "false"
@@ -97,7 +97,7 @@ and printtmATerm outer t =
         (match t with
          | TmZero _ -> pr (string n)
          | TmSucc (_, s) -> f (n + 1) s
-         | _ -> (pr "(succ "; printtmATerm false t1; pr ")"))
+         | _ -> (pr "(succ "; printTerm false t1; pr ")"))
       in f 1 t1
   | t -> (pr "("; printtmTerm outer t; pr ")")
   

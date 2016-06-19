@@ -66,25 +66,25 @@ type Command = | Eval of Info * Term | Bind of Info * string * Binding
 
 (* ---------------------------------------------------------------------- *)
 (* Context management *)
-let emptycontext = []
+let emptyContext : Context = []
   
-let ctxlength ctx = List.length ctx
+let ctxLength (ctx : Context) = List.length ctx
   
-let addbinding ctx x bind = (x, bind) :: ctx
+let addBinding (ctx : Context) x bind = (x, bind) :: ctx
   
-let addname ctx x = addbinding ctx x NameBind
+let addName (ctx : Context) x = addBinding ctx x NameBind
   
-let rec isnamebound ctx x =
+let rec isName (ctx : Context) x =
   match ctx with
   | [] -> false
-  | (y, _) :: rest -> if y = x then true else isnamebound rest x
+  | (y, _) :: rest -> if y = x then true else isName rest x
   
 let rec pickfreshname ctx x =
-  if isnamebound ctx x
+  if isName ctx x
   then pickfreshname ctx (x ^ "'")
   else (((x, NameBind) :: ctx), x)
   
-let index2name fi ctx x =
+let index2Name fi (ctx : Context) x =
   try let (xn, _) = List.item x ctx in xn
   with
   | Failure _ ->
@@ -92,10 +92,10 @@ let index2name fi ctx x =
         Printf.sprintf "Variable lookup failure: offset: %d, ctx size: %d"
       in error fi (msg x (List.length ctx))
   
-let rec name2index fi ctx x =
+let rec name2Index fi (ctx : Context) x =
   match ctx with
   | [] -> error fi ("Identifier " ^ (x ^ " is unbound"))
-  | (y, _) :: rest -> if y = x then 0 else 1 + (name2index fi rest x)
+  | (y, _) :: rest -> if y = x then 0 else 1 + (name2Index fi rest x)
   
 (* ---------------------------------------------------------------------- *)
 (* Shifting *)
@@ -196,11 +196,11 @@ let rec tytermSubst tyS j t =
   tmmap (fun fi _ x n -> TmVar (fi, x, n)) (fun j tyT -> typeSubst tyS j tyT)
     j t
   
-let tytermSubstTop tyS t = termShift (-1) (tytermSubst (typeShift 1 tyS) 0 t)
+let tyTermSubstTop tyS t = termShift (-1) (tytermSubst (typeShift 1 tyS) 0 t)
   
 (* ---------------------------------------------------------------------- *)
 (* Context management (continued) *)
-let rec getbinding fi ctx i =
+let rec getBinding fi (ctx : Context) i =
   try let (_, bind) = List.item i ctx in bindingshift (i + 1) bind
   with
   | Failure _ ->
@@ -209,15 +209,15 @@ let rec getbinding fi ctx i =
       in error fi (msg i (List.length ctx))
   
 let getTypeFromContext fi ctx i =
-  match getbinding fi ctx i with
+  match getBinding fi ctx i with
   | VarBind tyT -> tyT
   | TmAbbBind (_, (Some tyT)) -> tyT
   | TmAbbBind (_, None) ->
-      error fi ("No type recorded for variable " ^ (index2name fi ctx i))
+      error fi ("No type recorded for variable " ^ (index2Name fi ctx i))
   | _ ->
       error fi
         ("getTypeFromContext: Wrong kind of binding for variable " ^
-           (index2name fi ctx i))
+           (index2Name fi ctx i))
   
 (* ---------------------------------------------------------------------- *)
 (* Extracting file info *)
@@ -269,7 +269,7 @@ let ``break`` () = print_break 0 0
   
 let small t = match t with | TmVar (_) -> true | _ -> false
   
-let rec printtyType outer ctx tyT =
+let rec printTyType outer ctx tyT =
   match tyT with
   | TyRec (x, tyT) ->
       let (ctx1, x) = pickfreshname ctx x
@@ -279,25 +279,25 @@ let rec printtyType outer ctx tyT =
          pr x;
          pr ".";
          print_space ();
-         printtyType outer ctx1 tyT;
+         printTyType outer ctx1 tyT;
          cbox ())
-  | tyT -> printtyArrowType outer ctx tyT
-and printtyArrowType outer ctx tyT =
+  | tyT -> printTyArrowType outer ctx tyT
+and printTyArrowType outer ctx tyT =
   match tyT with
   | TyArr (tyT1, tyT2) ->
       (obox0 ();
-       printtyAType false ctx tyT1;
+       printTyAType false ctx tyT1;
        if outer then pr " " else ();
        pr "->";
        if outer then print_space () else ``break`` ();
-       printtyArrowType outer ctx tyT2;
+       printTyArrowType outer ctx tyT2;
        cbox ())
-  | tyT -> printtyAType outer ctx tyT
-and printtyAType outer ctx tyT =
+  | tyT -> printTyAType outer ctx tyT
+and printTyAType outer ctx tyT =
   match tyT with
   | TyVar (x, n) ->
-      if (ctxlength ctx) = n
-      then pr (index2name dummyinfo ctx x)
+      if (ctxLength ctx) = n
+      then pr (index2Name dummyinfo ctx x)
       else
         pr
           ("[bad index: " ^
@@ -314,7 +314,7 @@ and printtyAType outer ctx tyT =
   | TyRecord fields ->
       let pf i (li, tyTi) =
         (if li <> (string i) then (pr li; pr ":") else ();
-         printtyType false ctx tyTi) in
+         printTyType false ctx tyTi) in
       let rec p i l =
         (match l with
          | [] -> ()
@@ -331,7 +331,7 @@ and printtyAType outer ctx tyT =
   | TyVariant fields ->
       let pf i (li, tyTi) =
         (if li <> (string i) then (pr li; pr ":") else ();
-         printtyType false ctx tyTi) in
+         printTyType false ctx tyTi) in
       let rec p i l =
         (match l with
          | [] -> ()
@@ -342,9 +342,9 @@ and printtyAType outer ctx tyT =
               if outer then print_space () else ``break`` ();
               p (i + 1) rest))
       in (pr "<"; open_hovbox 0; p 1 fields; pr ">"; cbox ())
-  | tyT -> (pr "("; printtyType outer ctx tyT; pr ")")
+  | tyT -> (pr "("; printTyType outer ctx tyT; pr ")")
   
-let printty ctx tyT = printtyType true ctx tyT
+let printTy (ctx : Context) tyT = printTyType true ctx tyT
   
 let rec printtmTerm outer ctx t =
   match t with
@@ -355,7 +355,7 @@ let rec printtmTerm outer ctx t =
          pr "lambda ";
          pr x';
          pr ":";
-         printtyType false ctx tyT1;
+         printTyType false ctx tyT1;
          pr ".";
          if (small t2) && (not outer) then ``break`` () else print_space ();
          printtmTerm outer ctx' t2;
@@ -369,7 +369,7 @@ let rec printtmTerm outer ctx t =
        print_space ();
        pr "in";
        print_space ();
-       printtmTerm false (addname ctx x) t2;
+       printtmTerm false (addName ctx x) t2;
        cbox ())
   | TmFix (_, t1) ->
       (obox (); pr "fix "; printtmTerm false ctx t1; cbox ())
@@ -412,19 +412,19 @@ and printtmAppTerm outer ctx t =
       (obox0 ();
        printtmAppTerm false ctx t1;
        print_space ();
-       printtmATerm false ctx t2;
+       printTerm false ctx t2;
        cbox ())
   | TmTimesfloat (_, _, t2) ->
       (pr "timesfloat ";
-       printtmATerm false ctx t2;
+       printTerm false ctx t2;
        pr " ";
-       printtmATerm false ctx t2)
+       printTerm false ctx t2)
   | TmFold (_, tyS) ->
-      (obox0 (); pr "fold ["; printtyType false ctx tyS; pr "]"; cbox ())
+      (obox0 (); pr "fold ["; printTyType false ctx tyS; pr "]"; cbox ())
   | TmUnfold (_, tyS) ->
-      (obox0 (); pr "unfold ["; printtyType false ctx tyS; pr "]"; cbox ())
-  | TmPred (_, t1) -> (pr "pred "; printtmATerm false ctx t1)
-  | TmIsZero (_, t1) -> (pr "iszero "; printtmATerm false ctx t1)
+      (obox0 (); pr "unfold ["; printTyType false ctx tyS; pr "]"; cbox ())
+  | TmPred (_, t1) -> (pr "pred "; printTerm false ctx t1)
+  | TmIsZero (_, t1) -> (pr "iszero "; printTerm false ctx t1)
   | t -> printtmPathTerm outer ctx t
 and printtmAscribeTerm outer ctx t =
   match t with
@@ -433,19 +433,19 @@ and printtmAscribeTerm outer ctx t =
        printtmAppTerm false ctx t1;
        print_space ();
        pr "as ";
-       printtyType false ctx tyT1;
+       printTyType false ctx tyT1;
        cbox ())
-  | t -> printtmATerm outer ctx t
+  | t -> printTerm outer ctx t
 and printtmPathTerm outer ctx t =
   match t with
-  | TmProj (_, t1, l) -> (printtmATerm false ctx t1; pr "."; pr l)
+  | TmProj (_, t1, l) -> (printTerm false ctx t1; pr "."; pr l)
   | t -> printtmAscribeTerm outer ctx t
-and printtmATerm outer ctx t =
+and printTerm outer ctx t =
   match t with
-  | TmInert (_, tyT) -> (pr "inert["; printtyType false ctx tyT; pr "]")
+  | TmInert (_, tyT) -> (pr "inert["; printTyType false ctx tyT; pr "]")
   | TmVar (fi, x, n) ->
-      if (ctxlength ctx) = n
-      then pr (index2name fi ctx x)
+      if (ctxLength ctx) = n
+      then pr (index2Name fi ctx x)
       else
         pr
           ("[bad index: " ^
@@ -481,7 +481,7 @@ and printtmATerm outer ctx t =
         (match t with
          | TmZero _ -> pr (string n)
          | TmSucc (_, s) -> f (n + 1) s
-         | _ -> (pr "(succ "; printtmATerm false ctx t1; pr ")"))
+         | _ -> (pr "(succ "; printTerm false ctx t1; pr ")"))
       in f 1 t1
   | TmTag (_, l, t, tyT) ->
       (obox ();
@@ -492,7 +492,7 @@ and printtmATerm outer ctx t =
        pr ">";
        print_space ();
        pr "as ";
-       printtyType outer ctx tyT;
+       printTyType outer ctx tyT;
        cbox ())
   | t -> (pr "("; printtmTerm outer ctx t; pr ")")
   
@@ -502,8 +502,8 @@ let prbinding ctx b =
   match b with
   | NameBind -> ()
   | TyVarBind -> ()
-  | VarBind tyT -> (pr ": "; printty ctx tyT)
+  | VarBind tyT -> (pr ": "; printTy ctx tyT)
   | TmAbbBind (t, _) -> (pr "= "; printtm ctx t)
-  | TyAbbBind tyT -> (pr "= "; printty ctx tyT)
+  | TyAbbBind tyT -> (pr "= "; printTy ctx tyT)
   
 

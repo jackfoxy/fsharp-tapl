@@ -153,13 +153,13 @@ Command :
   | Term 
       { fun ctx -> (let t = $1 ctx in Eval(tmInfo t,t)),ctx }
   | UCID TyBinder
-      { fun ctx -> ((Bind($1.i, $1.v, $2 ctx)), addname ctx $1.v) }
+      { fun ctx -> ((Bind($1.i, $1.v, $2 ctx)), addName ctx $1.v) }
   | LCID Binder
-      { fun ctx -> ((Bind($1.i,$1.v,$2 ctx)), addname ctx $1.v) }
+      { fun ctx -> ((Bind($1.i,$1.v,$2 ctx)), addName ctx $1.v) }
   | LCURLY UCID COMMA LCID RCURLY EQ Term
      { fun ctx ->
-         let ctx1 = addname ctx $2.v in
-         let ctx2 = addname ctx1 $4.v in
+         let ctx1 = addName ctx $2.v in
+         let ctx2 = addName ctx1 $4.v in
          (SomeBind($1,$2.v,$4.v,$7 ctx), ctx2) }
 
 /* Right-hand sides of top-level bindings */
@@ -190,7 +190,7 @@ TermSeq :
       { $1 }
   | Term SEMI TermSeq 
       { fun ctx ->
-          TmApp($2, TmAbs($2, "_", TyUnit, $3 (addname ctx "_")), $1 ctx) }
+          TmApp($2, TmAbs($2, "_", TyUnit, $3 (addName ctx "_")), $1 ctx) }
 
 /* All kind expressions */
 Kind :
@@ -203,7 +203,7 @@ OType :
  | LEQ Type 
       { $2 }
  | COLONCOLON Kind
-      { fun ctx -> maketop ($2 ctx) }
+      { fun ctx -> makeTop ($2 ctx) }
 
 ArrowKind :
     AKind DARROW ArrowKind  { fun ctx -> KnArr($1 ctx, $3 ctx) }
@@ -216,11 +216,11 @@ Type :
                 { $1 }
   | ALL UCID OType DOT Type
       { fun ctx ->
-          let ctx1 = addname ctx $2.v in
+          let ctx1 = addName ctx $2.v in
           TyAll($2.v,$3 ctx,$5 ctx1) }
   | LAMBDA UCID OKind DOT Type
       { fun ctx ->
-          let ctx1 = addname ctx $2.v in
+          let ctx1 = addName ctx $2.v in
           TyAbs($2.v, $3 ctx, $5 ctx1) }
 
 /* Atomic types are those that never need extra parentheses */
@@ -229,8 +229,8 @@ AType :
            { $2 } 
   | UCID 
       { fun ctx ->
-          if isnamebound ctx $1.v then
-            TyVar(name2index $1.i ctx $1.v, ctxlength ctx)
+          if isName ctx $1.v then
+            TyVar(name2Index $1.i ctx $1.v, ctxLength ctx)
           else 
             TyId($1.v) }
   | TTOP
@@ -250,10 +250,10 @@ AType :
       { fun ctx -> TyNat }
   | LCURLY SOME UCID OType COMMA Type RCURLY
       { fun ctx ->
-          let ctx1 = addname ctx $3.v in
+          let ctx1 = addName ctx $3.v in
           TySome($3.v, $4 ctx, $6 ctx1) }
   | TTOP LSQUARE Kind RSQUARE
-      { fun ctx -> maketop ($3 ctx) }
+      { fun ctx -> makeTop ($3 ctx) }
 
 /* An "arrow type" is a sequence of atomic types separated by
    arrows. */
@@ -268,31 +268,31 @@ Term :
       { $1 }
   | LAMBDA LCID COLON Type DOT Term 
       { fun ctx ->
-          let ctx1 = addname ctx $2.v in
+          let ctx1 = addName ctx $2.v in
           TmAbs($1, $2.v, $4 ctx, $6 ctx1) }
   | LAMBDA USCORE COLON Type DOT Term 
       { fun ctx ->
-          let ctx1 = addname ctx "_" in
+          let ctx1 = addName ctx "_" in
           TmAbs($1, "_", $4 ctx, $6 ctx1) }
   | IF Term THEN Term ELSE Term
       { fun ctx -> TmIf($1, $2 ctx, $4 ctx, $6 ctx) }
   | LET LCID EQ Term IN Term
-      { fun ctx -> TmLet($1, $2.v, $4 ctx, $6 (addname ctx $2.v)) }
+      { fun ctx -> TmLet($1, $2.v, $4 ctx, $6 (addName ctx $2.v)) }
   | LET USCORE EQ Term IN Term
-      { fun ctx -> TmLet($1, "_", $4 ctx, $6 (addname ctx "_")) }
+      { fun ctx -> TmLet($1, "_", $4 ctx, $6 (addName ctx "_")) }
   | LETREC LCID COLON Type EQ Term IN Term
       { fun ctx -> 
-          let ctx1 = addname ctx $2.v in 
+          let ctx1 = addName ctx $2.v in 
           TmLet($1, $2.v, TmFix($1, TmAbs($1, $2.v, $4 ctx, $6 ctx1)),
                 $8 ctx1) }
   | LAMBDA UCID OType DOT Term
       { fun ctx ->
-          let ctx1 = addname ctx $2.v in
+          let ctx1 = addName ctx $2.v in
           TmTAbs($1,$2.v,$3 ctx,$5 ctx1) }
   | LET LCURLY UCID COMMA LCID RCURLY EQ Term IN Term
       { fun ctx ->
-          let ctx1 = addname ctx $3.v in
-          let ctx2 = addname ctx1 $5.v in
+          let ctx1 = addName ctx $3.v in
+          let ctx2 = addName ctx1 $5.v in
           TmUnpack($1,$3.v,$5.v,$8 ctx,$10 ctx2) }
   | AppTerm LEFTARROW LCID EQ Term
        { fun ctx -> TmUpdate($2, $1 ctx, $3.v, $5 ctx) }
@@ -330,7 +330,7 @@ ATerm :
       { fun ctx -> TmInert($1, $3 ctx) }
   | LCID 
       { fun ctx ->
-          TmVar($1.i, name2index $1.i ctx $1.v, ctxlength ctx) }
+          TmVar($1.i, name2Index $1.i ctx $1.v, ctxLength ctx) }
   | TRUE
       { fun ctx -> TmTrue($1) }
   | FALSE
@@ -399,7 +399,7 @@ TyAbbArgs :
       { fun b ctx -> (b, ctx) }
   | UCID OKind TyAbbArgs
       { fun b ctx ->
-          let ctx' = (addname ctx $1.v) in
+          let ctx' = (addName ctx $1.v) in
           $3 (b@[($1.v,$2 ctx)]) ctx' }
 
 TyBinder :
@@ -412,7 +412,7 @@ TyBinder :
           let (b,ctx') = $1 [] ctx in
           TyAbbBind(addbinders ($3 ctx') b, None) }
   | COLONCOLON Kind
-      { fun ctx -> TyVarBind(maketop ($2 ctx)) }
+      { fun ctx -> TyVarBind(makeTop ($2 ctx)) }
 
 Variance :
     HASH

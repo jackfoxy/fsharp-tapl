@@ -13,7 +13,6 @@ See LICENSE.TXT for licensing details.
    For most experiments with the implementation, it should not be
    necessary to change this file.
 *)
-
 namespace FSharpTapl
 
 open Ast
@@ -50,17 +49,17 @@ module LetexerciseLib =
         | NameBind -> ()
         | VarBind tyT -> 
             pr ": "
-            printty tyT
+            printTy tyT
     
     let rec processCommand ctx cmd = 
         match cmd with
         | Eval(_, t) -> 
-            let tyT = typeof ctx t
+            let tyT = typeOf ctx t
             let t' = eval ctx t
-            printtmATerm true ctx t'
+            printTerm true ctx t'
             print_break 1 2
             pr ": "
-            printty tyT
+            printTy tyT
             force_newline()
             ctx
         | Bind(_, x, bind) -> 
@@ -68,7 +67,7 @@ module LetexerciseLib =
             pr " "
             prbindingty ctx bind
             force_newline()
-            addbinding ctx x bind
+            addBinding ctx x bind
     
     let processInput parsedCommand input ctx = 
         setOutput parsedCommand

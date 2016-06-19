@@ -36,32 +36,32 @@ type Command =
 
 (* ---------------------------------------------------------------------- *)
 (* Context management *)
-let emptycontext = []
+let emptyContext : Context = []
   
-let ctxlength ctx =
+let ctxLength (ctx : Context) =
     List.length ctx
   
-let addbinding ctx x bind =
+let addBinding (ctx : Context) x bind =
     (x, bind) :: ctx
   
-let addname ctx x =
-    addbinding ctx x NameBind
+let addName ctx x =
+    addBinding ctx x NameBind
   
-let rec isnamebound ctx x =
+let rec isName (ctx : Context) x =
     match ctx with
     | [] ->
         false
     | (y, _) :: rest ->
         if y = x then true
-        else isnamebound rest x
+        else isName rest x
   
 let rec pickfreshname ctx x =
-    if isnamebound ctx x then
+    if isName ctx x then
         pickfreshname ctx (x + "'")
     else
         ((x, NameBind) :: ctx), x
   
-let index2name fi ctx x =
+let index2Name fi (ctx : Context) x =
     try let xn, _ = List.item x ctx
         xn
     with
@@ -69,13 +69,13 @@ let index2name fi ctx x =
         let msg = Printf.sprintf "Variable lookup failure: offset: %d, ctx size: %d" x (List.length ctx)
         error fi msg
   
-let rec name2index fi ctx x =
+let rec name2Index fi (ctx : Context) x =
     match ctx with
     | [] ->
         error fi ("Identifier " ^ (x ^ " is unbound"))
     | (y, _) :: rest ->
         if y = x then 0
-        else 1 + (name2index fi rest x)
+        else 1 + (name2Index fi rest x)
   
 (* ---------------------------------------------------------------------- *)
 (* Shifting *)
@@ -112,7 +112,7 @@ let termSubstTop s t =
   
 (* ---------------------------------------------------------------------- *)
 (* Context management (continued) *)
-let rec getbinding fi ctx i =
+let rec getBinding fi (ctx : Context) i =
     try let _, bind = List.item i ctx
         bind
     with Failure _ ->
@@ -120,10 +120,10 @@ let rec getbinding fi ctx i =
         error fi msg
   
 let getTypeFromContext fi ctx i =
-    match getbinding fi ctx i with
+    match getBinding fi ctx i with
     | VarBind tyT -> tyT
     | _ ->
-        error fi ("getTypeFromContext: Wrong kind of binding for variable " + (index2name fi ctx i))
+        error fi ("getTypeFromContext: Wrong kind of binding for variable " + (index2Name fi ctx i))
   
 (* ---------------------------------------------------------------------- *)
 (* Extracting file info *)
@@ -158,35 +158,35 @@ let small t =
     | TmVar (_) -> true
     | _ -> false
   
-let rec printtyType outer tyT =
+let rec printTyType outer tyT =
   match tyT with
-  | tyT -> printtyArrowType outer tyT
+  | tyT -> printTyArrowType outer tyT
 
-and printtyArrowType outer tyT =
+and printTyArrowType outer tyT =
     match tyT with
     | TyArr (tyT1, tyT2) ->
         obox0 ()
-        printtyAType false tyT1
+        printTyAType false tyT1
         if outer then pr " " else ()
         pr "->"
         if outer then print_space () else ``break`` ()
-        printtyArrowType outer tyT2
+        printTyArrowType outer tyT2
         cbox ()
     | tyT ->
-        printtyAType outer tyT
+        printTyAType outer tyT
 
-and printtyAType outer tyT =
+and printTyAType outer tyT =
     match tyT with
     | TyTop -> pr "Top"
     | TyBot -> pr "Bot"
     | tyT ->
         pr "("
-        printtyType outer tyT
+        printTyType outer tyT
         pr ")"
   
-let printty tyT = printtyType true tyT
+let printTy tyT = printTyType true tyT
   
-let rec printtmTerm outer ctx t =
+let rec printTerm outer ctx t =
     match t with
     | TmAbs (_, x, tyT1, t2) ->
         let ctx', x' = pickfreshname ctx x
@@ -194,10 +194,10 @@ let rec printtmTerm outer ctx t =
         pr "lambda "
         pr x'
         pr ":"
-        printtyType false tyT1
+        printTyType false tyT1
         pr "."
         if small t2 && not outer then ``break`` () else print_space ()
-        printtmTerm outer ctx' t2
+        printTerm outer ctx' t2
         cbox ()
     | t ->
         printtmAppTerm outer ctx t
@@ -216,8 +216,8 @@ and printtmAppTerm outer ctx t =
 and printtmATerm outer ctx t =
   match t with
   | TmVar (fi, x, n) ->
-      if (ctxlength ctx) = n then
-        pr (index2name fi ctx x)
+      if (ctxLength ctx) = n then
+        pr (index2Name fi ctx x)
       else
         pr
           ("[bad index: " ^
@@ -228,14 +228,14 @@ and printtmATerm outer ctx t =
                          ((List.fold (fun s (x, _) -> s ^ (" " ^ x)) ""
                              ctx)
                             ^ " }]"))))))
-  | t -> (pr "("; printtmTerm outer ctx t; pr ")")
+  | t -> (pr "("; printTerm outer ctx t; pr ")")
   
-let printtm ctx t = printtmTerm true ctx t
+let printtm ctx t = printTerm true ctx t
   
 let prbinding _ b =
     match b with
     | NameBind -> ()
     | VarBind tyT ->
         pr ": "
-        printty tyT
+        printTy tyT
   

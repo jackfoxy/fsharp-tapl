@@ -26,6 +26,7 @@ module CommandLine =
         Usage : string
         Source : Source
         Target : Target
+        Lambda : bool
         ErrorMsg: string option
         }
 
@@ -33,6 +34,7 @@ module CommandLine =
         | [<AltCommandLine("-i")>] Input of string
         | [<AltCommandLine("-o")>] Output of string
         | [<AltCommandLine("-s")>] ConsoleInput of string 
+        | [<AltCommandLine("-l")>] Lambda
   
          with
             interface IArgParserTemplate with
@@ -41,6 +43,7 @@ module CommandLine =
                     | Input _ -> "(optional) file path to process"
                     | Output _ -> "(optional, not implemented) output path"
                     | ConsoleInput _ -> "input from console"
+                    | Lambda -> @"use and print \u03BB for lambda followed by space"
 
     let parseCommandLine argv = 
 
@@ -103,6 +106,7 @@ module CommandLine =
                             Usage = commandLine.Usage()
                             Source = source
                             Target = target
+                            Lambda = commandLine.Contains <@ Lambda @>
                             ErrorMsg = None
                             } 
                         } with
@@ -113,10 +117,11 @@ module CommandLine =
             Usage = commandLine.Usage()
             Source = Source.NoSource
             Target = Target.Console 
+            Lambda = false
             ErrorMsg = Some msg
             } 
 
-    let reportEerror (parsedCommand : ParsedCommand) =
+    let reportError (parsedCommand : ParsedCommand) =
         
         match parsedCommand.ErrorMsg with
         | Some msg ->
@@ -148,7 +153,19 @@ module Compatability =
 
     let mutable private formatter' : formatter option = None
 
-    let private makeOutput (parsedCommand : ParsedCommand) =
+    let mutable private parsedCommand : ParsedCommand =
+        {
+        Usage = ""
+        Source = Source.NoSource
+        Target = Target.Console 
+        Lambda = false
+        ErrorMsg = None
+        } 
+        
+
+    let private makeOutput (parsedCommand' : ParsedCommand) =
+
+        parsedCommand <- parsedCommand'
 
         output' <-
             match parsedCommand.Target with
@@ -178,9 +195,10 @@ module Compatability =
         | Some _ -> 
             formatter'.Value
 
-    let pr s = 
+    let pr (s : string) = 
+        let s' = if parsedCommand.Lambda then s.Replace("lambda ", "\u03BB") else s
         (getOutputFormatter()
-        |> pp_print_string) s
+        |> pp_print_string) s'
 
     let open_hovbox indent =
         (getOutputFormatter()
@@ -234,7 +252,9 @@ module Common =
                     with | ExitException x -> x) ()
             with e ->
                 printfn "%A" e
-                exit 2
+                2
 
         Compatability.print_flush ()
+//        printfn "Hit any key to exit."
+//        System.Console.ReadKey() |> ignore
         exit res

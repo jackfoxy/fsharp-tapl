@@ -16,12 +16,13 @@ module CommandLine =
         Usage : string
         Source : Source
         Target : Target
+        Lambda : bool
         ErrorMsg: string option
         }
 
     val parse : argv : string [] -> ParsedCommand
 
-    val reportEerror : ParsedCommand -> unit
+    val reportError : ParsedCommand -> unit
 
 module List =
     val assoc : a : 'a  -> l : ('a * 'b) list -> 'b option when 'a : equality

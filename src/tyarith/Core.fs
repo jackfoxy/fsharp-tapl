@@ -46,30 +46,30 @@ let rec eval1 t =
 let rec eval t = try let t' = eval1 t in eval t' with | Common.NoRuleAppliesException -> t
   
 (* ------------------------   TYPING  ------------------------ *)
-let rec typeof t =
+let rec typeOf t =
   match t with
   | TmTrue _ -> TyBool
   | TmFalse _ -> TyBool
   | TmIf (fi, t1, t2, t3) ->
-      if (typeof t1) = TyBool
+      if (typeOf t1) = TyBool
       then
-        (let tyT2 = typeof t2
+        (let tyT2 = typeOf t2
          in
-           if tyT2 = (typeof t3)
+           if tyT2 = (typeOf t3)
            then tyT2
            else error fi "arms of conditional have different types")
       else error fi "guard of conditional not a boolean"
   | TmZero _ -> TyNat
   | TmSucc (fi, t1) ->
-      if (typeof t1) = TyNat
+      if (typeOf t1) = TyNat
       then TyNat
       else error fi "argument of succ is not a number"
   | TmPred (fi, t1) ->
-      if (typeof t1) = TyNat
+      if (typeOf t1) = TyNat
       then TyNat
       else error fi "argument of pred is not a number"
   | TmIsZero (fi, t1) ->
-      if (typeof t1) = TyNat
+      if (typeOf t1) = TyNat
       then TyBool
       else error fi "argument of iszero is not a number"
   

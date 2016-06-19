@@ -33,19 +33,19 @@ let rec eval1 ctx t =
   | TmIf (fi, t1, t2, t3) -> let t1' = eval1 ctx t1 in TmIf (fi, t1', t2, t3)
   | _ -> raise Common.NoRuleAppliesException
   
-let rec eval ctx t =
+let rec eval (ctx : Context) t =
   try let t' = eval1 ctx t in eval ctx t' with | Common.NoRuleAppliesException -> t
   
 (* ------------------------   TYPING  ------------------------ *)
-let rec typeof ctx t =
+let rec typeOf ctx t =
   match t with
   | TmVar (fi, i, _) -> getTypeFromContext fi ctx i
   | TmAbs (_, x, tyT1, t2) ->
-      let ctx' = addbinding ctx x (VarBind tyT1) in
-      let tyT2 = typeof ctx' t2 in TyArr (tyT1, tyT2)
+      let ctx' = addBinding ctx x (VarBind tyT1) in
+      let tyT2 = typeOf ctx' t2 in TyArr (tyT1, tyT2)
   | TmApp (fi, t1, t2) ->
-      let tyT1 = typeof ctx t1 in
-      let tyT2 = typeof ctx t2
+      let tyT1 = typeOf ctx t1 in
+      let tyT2 = typeOf ctx t2
       in
         (match tyT1 with
          | TyArr (tyT11, tyT12) ->
@@ -56,11 +56,11 @@ let rec typeof ctx t =
   | TmTrue _ -> TyBool
   | TmFalse _ -> TyBool
   | TmIf (fi, t1, t2, t3) ->
-      if (typeof ctx t1) = TyBool
+      if (typeOf ctx t1) = TyBool
       then
-        (let tyT2 = typeof ctx t2
+        (let tyT2 = typeOf ctx t2
          in
-           if tyT2 = (typeof ctx t3)
+           if tyT2 = (typeOf ctx t3)
            then tyT2
            else error fi "arms of conditional have different types")
       else error fi "guard of conditional not a boolean"

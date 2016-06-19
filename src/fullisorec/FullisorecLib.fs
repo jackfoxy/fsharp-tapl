@@ -49,10 +49,10 @@ module FullisorecLib =
         match b with
         | NameBind -> NameBind
         | VarBind tyT -> VarBind tyT
-        | TmAbbBind(t, None) -> TmAbbBind(t, Some(typeof ctx t))
+        | TmAbbBind(t, None) -> TmAbbBind(t, Some(typeOf ctx t))
         | TmAbbBind(t, (Some tyT)) -> 
-            let tyT' = typeof ctx t
-            if tyeqv ctx tyT' tyT then TmAbbBind(t, Some tyT)
+            let tyT' = typeOf ctx t
+            if tyEqv ctx tyT' tyT then TmAbbBind(t, Some tyT)
             else error fi "Type of binding does not match declared type"
         | TyVarBind -> TyVarBind
         | TyAbbBind tyT -> TyAbbBind tyT
@@ -63,33 +63,33 @@ module FullisorecLib =
         | TyVarBind -> ()
         | VarBind tyT -> 
             (pr ": "
-             printty ctx tyT)
+             printTy ctx tyT)
         | TmAbbBind(t, tyTopt) -> 
             pr ": "
             match tyTopt with
-            | None -> printty ctx (typeof ctx t)
-            | Some tyT -> printty ctx tyT
+            | None -> printTy ctx (typeOf ctx t)
+            | Some tyT -> printTy ctx tyT
         | TyAbbBind _ -> pr ":: *"
     
     let rec processCommand ctx cmd = 
         match cmd with
         | Eval(_, t) -> 
-            let tyT = typeof ctx t
+            let tyT = typeOf ctx t
             let t' = eval ctx t
-            printtmATerm true ctx t'
+            printTerm true ctx t'
             print_break 1 2
             pr ": "
-            printty ctx tyT
+            printTy ctx tyT
             force_newline()
             ctx
         | Bind(fi, x, bind) -> 
             let bind = checkbinding fi ctx bind
-            let bind' = evalbinding ctx bind
+            let bind' = evalBinding ctx bind
             pr x
             pr " "
             prbindingty ctx bind'
             force_newline()
-            addbinding ctx x bind'
+            addBinding ctx x bind'
     
     let processInput parsedCommand input ctx = 
         setOutput parsedCommand

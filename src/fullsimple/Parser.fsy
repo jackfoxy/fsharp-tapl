@@ -145,9 +145,9 @@ Command :
   | Term 
       { fun ctx -> (let t = $1 ctx in Eval(tmInfo t,t)),ctx }
   | UCID TyBinder
-      { fun ctx -> ((Bind($1.i, $1.v, $2 ctx)), addname ctx $1.v) }
+      { fun ctx -> ((Bind($1.i, $1.v, $2 ctx)), addName ctx $1.v) }
   | LCID Binder
-      { fun ctx -> ((Bind($1.i,$1.v,$2 ctx)), addname ctx $1.v) }
+      { fun ctx -> ((Bind($1.i,$1.v,$2 ctx)), addName ctx $1.v) }
 
 /* Right-hand sides of top-level bindings */
 Binder :
@@ -167,8 +167,8 @@ AType :
            { $2 } 
   | UCID 
       { fun ctx ->
-          if isnamebound ctx $1.v then
-            TyVar(name2index $1.i ctx $1.v, ctxlength ctx)
+          if isNameBound ctx $1.v then
+            TyVar(name2Index $1.i ctx $1.v, ctxLength ctx)
           else 
             TyId($1.v) }
   | BOOL
@@ -230,19 +230,19 @@ Term :
           TmCase($1, $2 ctx, $4 ctx) }
   | LAMBDA LCID COLON Type DOT Term 
       { fun ctx ->
-          let ctx1 = addname ctx $2.v in
+          let ctx1 = addName ctx $2.v in
           TmAbs($1, $2.v, $4 ctx, $6 ctx1) }
   | LAMBDA USCORE COLON Type DOT Term 
       { fun ctx ->
-          let ctx1 = addname ctx "_" in
+          let ctx1 = addName ctx "_" in
           TmAbs($1, "_", $4 ctx, $6 ctx1) }
   | LET LCID EQ Term IN Term
-      { fun ctx -> TmLet($1, $2.v, $4 ctx, $6 (addname ctx $2.v)) }
+      { fun ctx -> TmLet($1, $2.v, $4 ctx, $6 (addName ctx $2.v)) }
   | LET USCORE EQ Term IN Term
-      { fun ctx -> TmLet($1, "_", $4 ctx, $6 (addname ctx "_")) }
+      { fun ctx -> TmLet($1, "_", $4 ctx, $6 (addName ctx "_")) }
   | LETREC LCID COLON Type EQ Term IN Term
       { fun ctx -> 
-          let ctx1 = addname ctx $2.v in 
+          let ctx1 = addName ctx $2.v in 
           TmLet($1, $2.v, TmFix($1, TmAbs($1, $2.v, $4 ctx, $6 ctx1)),
                 $8 ctx1) }
 
@@ -287,7 +287,7 @@ TermSeq :
       { $1 }
   | Term SEMI TermSeq 
       { fun ctx ->
-          TmApp($2, TmAbs($2, "_", TyUnit, $3 (addname ctx "_")), $1 ctx) }
+          TmApp($2, TmAbs($2, "_", TyUnit, $3 (addName ctx "_")), $1 ctx) }
 
 /* Atomic terms are ones that never require extra parentheses */
 ATerm :
@@ -304,7 +304,7 @@ ATerm :
           TmTag($1, $2.v, $4 ctx, $7 ctx) }
   | LCID 
       { fun ctx ->
-          TmVar($1.i, name2index $1.i ctx $1.v, ctxlength ctx) }
+          TmVar($1.i, name2Index $1.i ctx $1.v, ctxLength ctx) }
   | STRINGV
       { fun ctx -> TmString($1.i, $1.v) }
   | UNIT
@@ -331,7 +331,7 @@ Cases :
 Case :
     LT LCID EQ LCID GT DDARROW AppTerm
       { fun ctx ->
-          let ctx1 = addname ctx $4.v in
+          let ctx1 = addName ctx $4.v in
           ($2.v, ($4.v, $7 ctx1)) }
 
 Fields :

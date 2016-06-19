@@ -38,7 +38,7 @@ let rec eval1 ctx t =
   | TmIf (_, (TmFalse _), _, t3) -> t3
   | TmIf (fi, t1, t2, t3) -> let t1' = eval1 ctx t1 in TmIf (fi, t1', t2, t3)
   | TmVar (fi, n, _) ->
-      (match getbinding fi ctx n with
+      (match getBinding fi ctx n with
        | TmAbbBind t -> t
        | _ -> raise Common.NoRuleAppliesException)
   | TmApp (_, (TmAbs (_, _, t12)), v2) when isval ctx v2 ->
@@ -80,7 +80,7 @@ let rec eval1 ctx t =
 let rec eval ctx t =
   try let t' = eval1 ctx t in eval ctx t' with | Common.NoRuleAppliesException -> t
   
-let evalbinding ctx b =
+let evalBinding ctx b =
   match b with
   | TmAbbBind t -> let t' = eval ctx t in TmAbbBind t'
   | bind -> bind

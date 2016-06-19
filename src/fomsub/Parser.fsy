@@ -125,9 +125,9 @@ Command :
   | Term 
       { fun ctx -> (let t = $1 ctx in Eval(tmInfo t,t)),ctx }
   | LCID Binder
-      { fun ctx -> ((Bind($1.i,$1.v,$2 ctx)), addname ctx $1.v) }
+      { fun ctx -> ((Bind($1.i,$1.v,$2 ctx)), addName ctx $1.v) }
   | UCID TyBinder
-      { fun ctx -> ((Bind($1.i, $1.v, $2 ctx)), addname ctx $1.v) }
+      { fun ctx -> ((Bind($1.i, $1.v, $2 ctx)), addName ctx $1.v) }
 
 /* Right-hand sides of top-level bindings */
 Binder :
@@ -145,7 +145,7 @@ OType :
  | LEQ Type 
       { $2 }
  | COLONCOLON Kind
-      { fun ctx -> maketop ($2 ctx) }
+      { fun ctx -> makeTop ($2 ctx) }
 
 ArrowKind :
     AKind DARROW ArrowKind  { fun ctx -> KnArr($1 ctx, $3 ctx) }
@@ -158,11 +158,11 @@ Type :
                 { $1 }
   | ALL UCID OType DOT Type
       { fun ctx ->
-          let ctx1 = addname ctx $2.v in
+          let ctx1 = addName ctx $2.v in
           TyAll($2.v,$3 ctx,$5 ctx1) }
   | LAMBDA UCID OKind DOT Type
       { fun ctx ->
-          let ctx1 = addname ctx $2.v in
+          let ctx1 = addName ctx $2.v in
           TyAbs($2.v, $3 ctx, $5 ctx1) }
 
 /* Atomic types are those that never need extra parentheses */
@@ -173,9 +173,9 @@ AType :
       { fun ctx -> TyTop }
   | UCID 
       { fun ctx ->
-          TyVar(name2index $1.i ctx $1.v, ctxlength ctx) }
+          TyVar(name2Index $1.i ctx $1.v, ctxLength ctx) }
   | TTOP LSQUARE Kind RSQUARE
-      { fun ctx -> maketop ($3 ctx) }
+      { fun ctx -> makeTop ($3 ctx) }
 
 /* An "arrow type" is a sequence of atomic types separated by
    arrows. */
@@ -190,15 +190,15 @@ Term :
       { $1 }
   | LAMBDA LCID COLON Type DOT Term 
       { fun ctx ->
-          let ctx1 = addname ctx $2.v in
+          let ctx1 = addName ctx $2.v in
           TmAbs($1, $2.v, $4 ctx, $6 ctx1) }
   | LAMBDA USCORE COLON Type DOT Term 
       { fun ctx ->
-          let ctx1 = addname ctx "_" in
+          let ctx1 = addName ctx "_" in
           TmAbs($1, "_", $4 ctx, $6 ctx1) }
   | LAMBDA UCID OType DOT Term
       { fun ctx ->
-          let ctx1 = addname ctx $2.v in
+          let ctx1 = addName ctx $2.v in
           TmTAbs($1,$2.v,$3 ctx,$5 ctx1) }
 
 AppTerm :
@@ -221,7 +221,7 @@ ATerm :
       { $2 } 
   | LCID 
       { fun ctx ->
-          TmVar($1.i, name2index $1.i ctx $1.v, ctxlength ctx) }
+          TmVar($1.i, name2Index $1.i ctx $1.v, ctxLength ctx) }
 
 AKind :
     STAR { fun ctx -> KnStar }
@@ -239,7 +239,7 @@ TyBinder :
   | LEQ Type
       { fun ctx -> TyVarBind($2 ctx) }
   | COLONCOLON Kind
-      { fun ctx -> TyVarBind(maketop ($2 ctx)) }
+      { fun ctx -> TyVarBind(makeTop ($2 ctx)) }
 
 AppType :
     AppType AType { fun ctx -> TyApp($1 ctx,$2 ctx) }

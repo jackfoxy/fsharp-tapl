@@ -48,12 +48,12 @@ module TyarithLib =
     let rec processCommand cmd = 
         match cmd with
         | Eval(_, t) -> 
-            let tyT = typeof t
+            let tyT = typeOf t
             let t' = eval t
-            printtmATerm true t'
+            printTerm true t'
             print_break 1 2
             pr ": "
-            printty tyT
+            printTy tyT
             force_newline()
             ()
     

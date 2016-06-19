@@ -22,7 +22,7 @@ module console1 =
 
         match parsedCommand.Source with
         | NoSource -> 
-            reportEerror parsedCommand
+            reportError parsedCommand
         | input -> 
             let main () =
                 processInput parsedCommand input |> ignore

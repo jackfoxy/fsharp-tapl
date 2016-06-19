@@ -22,7 +22,7 @@ let rec isval _ t =
   
 let rec eval1 ctx t =
   match t with
-  | TmTApp (_, (TmTAbs (_, _, _, t11)), tyT2) -> tytermSubstTop tyT2 t11
+  | TmTApp (_, (TmTAbs (_, _, _, t11)), tyT2) -> tyTermSubstTop tyT2 t11
   | TmTApp (fi, t1, tyT2) -> let t1' = eval1 ctx t1 in TmTApp (fi, t1', tyT2)
   | TmApp (_, (TmAbs (_, _, _, t12)), v2) when isval ctx v2 ->
       termSubstTop v2 t12
@@ -31,61 +31,61 @@ let rec eval1 ctx t =
   | TmApp (fi, t1, t2) -> let t1' = eval1 ctx t1 in TmApp (fi, t1', t2)
   | _ -> raise Common.NoRuleAppliesException
   
-let rec eval ctx t =
+let rec eval (ctx : Context) t =
   try let t' = eval1 ctx t in eval ctx t' with | Common.NoRuleAppliesException -> t
   
 (* ------------------------   SUBTYPING  ------------------------ *)
 let promote ctx t =
   match t with
   | TyVar (i, _) ->
-      (match getbinding dummyinfo ctx i with
+      (match getBinding dummyinfo ctx i with
        | TyVarBind tyT -> tyT
        | _ -> raise Common.NoRuleAppliesException)
   | _ -> raise Common.NoRuleAppliesException
   
-let rec subtype ctx tyS tyT =
+let rec subType ctx tyS tyT =
   (tyS = tyT) ||
     (match (tyS, tyT) with
-     | (TyVar (_), _) -> subtype ctx (promote ctx tyS) tyT
+     | (TyVar (_), _) -> subType ctx (promote ctx tyS) tyT
      | (TyAll (tyX1, tyS1, tyS2), TyAll (_, tyT1, tyT2)) ->
-         ((subtype ctx tyS1 tyT1) && (subtype ctx tyT1 tyS1)) &&
-           (let ctx1 = addbinding ctx tyX1 (TyVarBind tyT1)
-            in subtype ctx1 tyS2 tyT2)
+         ((subType ctx tyS1 tyT1) && (subType ctx tyT1 tyS1)) &&
+           (let ctx1 = addBinding ctx tyX1 (TyVarBind tyT1)
+            in subType ctx1 tyS2 tyT2)
      | (_, TyTop) -> true
      | (TyArr (tyS1, tyS2), TyArr (tyT1, tyT2)) ->
-         (subtype ctx tyT1 tyS1) && (subtype ctx tyS2 tyT2)
+         (subType ctx tyT1 tyS1) && (subType ctx tyS2 tyT2)
      | (_) -> false)
   
 (* ------------------------   TYPING  ------------------------ *)
 let rec lcst ctx tyS =
   try lcst ctx (promote ctx tyS) with | Common.NoRuleAppliesException -> tyS
   
-let rec typeof ctx t =
+let rec typeOf ctx t =
   match t with
   | TmTAbs (_, tyX, tyT1, t2) ->
-      let ctx = addbinding ctx tyX (TyVarBind tyT1) in
-      let tyT2 = typeof ctx t2 in TyAll (tyX, tyT1, tyT2)
+      let ctx = addBinding ctx tyX (TyVarBind tyT1) in
+      let tyT2 = typeOf ctx t2 in TyAll (tyX, tyT1, tyT2)
   | TmTApp (fi, t1, tyT2) ->
-      let tyT1 = typeof ctx t1
+      let tyT1 = typeOf ctx t1
       in
         (match lcst ctx tyT1 with
          | TyAll (_, tyT11, tyT12) ->
-             (if not (subtype ctx tyT2 tyT11)
+             (if not (subType ctx tyT2 tyT11)
               then error fi "type parameter type mismatch"
               else ();
               typeSubstTop tyT2 tyT12)
          | _ -> error fi "universal type expected")
   | TmVar (fi, i, _) -> getTypeFromContext fi ctx i
   | TmAbs (_, x, tyT1, t2) ->
-      let ctx' = addbinding ctx x (VarBind tyT1) in
-      let tyT2 = typeof ctx' t2 in TyArr (tyT1, typeShift (-1) tyT2)
+      let ctx' = addBinding ctx x (VarBind tyT1) in
+      let tyT2 = typeOf ctx' t2 in TyArr (tyT1, typeShift (-1) tyT2)
   | TmApp (fi, t1, t2) ->
-      let tyT1 = typeof ctx t1 in
-      let tyT2 = typeof ctx t2
+      let tyT1 = typeOf ctx t1 in
+      let tyT2 = typeOf ctx t2
       in
         (match lcst ctx tyT1 with
          | TyArr (tyT11, tyT12) ->
-             if subtype ctx tyT2 tyT11
+             if subType ctx tyT2 tyT11
              then tyT12
              else error fi "parameter type mismatch"
          | _ -> error fi "arrow type expected")

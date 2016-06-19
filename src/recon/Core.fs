@@ -50,19 +50,19 @@ let rec eval1 ctx t =
   | TmApp (fi, t1, t2) -> let t1' = eval1 ctx t1 in TmApp (fi, t1', t2)
   | _ -> raise Common.NoRuleAppliesException
   
-let rec eval ctx t =
+let rec eval (ctx : Context) t =
   try let t' = eval1 ctx t in eval ctx t' with | Common.NoRuleAppliesException -> t
   
 (* ------------------------   TYPING  ------------------------ *)
 type Constr = (Ty * Ty) list
 
-let emptyconstr = []
+let emptyConstr : Constr = []
   
-let combineconstr = List.append
+let combineConstr : (Constr -> Constr -> Constr) = List.append
   
 let prconstr constr =
   let pc (tyS, tyT) =
-    (printtyType false tyS; pr "="; printtyType false tyT) in
+    (printTyType false tyS; pr "="; printTyType false tyT) in
   let rec f l =
     match l with
     | [] -> ()
@@ -70,12 +70,12 @@ let prconstr constr =
     | c :: rest -> (pc c; pr ", "; f rest)
   in (pr "{"; f constr; pr "}")
   
-type Nextuvar =
+type NextUVar =
   | NextUVar of string * UvarGenerator
 
-and UvarGenerator = unit -> Nextuvar
+and UvarGenerator = unit -> NextUVar
 
-let uvargen =
+let uvargen : (unit -> NextUVar) =
     let rec f n () =
         NextUVar ("?X" ^ (string n), f (n + 1))    
     f 0
@@ -85,7 +85,7 @@ let rec recon ctx nextuvar t =
   | TmVar (fi, i, _) ->
       let tyT = getTypeFromContext fi ctx i in (tyT, nextuvar, [])
   | TmAbs (_, x, tyT1, t2) ->
-      let ctx' = addbinding ctx x (VarBind tyT1) in
+      let ctx' = addBinding ctx x (VarBind tyT1) in
       let (tyT2, nextuvar2, constr2) = recon ctx' nextuvar t2
       in ((TyArr (tyT1, tyT2)), nextuvar2, constr2)
   | TmApp (_, t1, t2) ->
@@ -126,7 +126,7 @@ let substinty tyX tyT tyS =
     | TyId s -> if s = tyX then tyT else TyId s
   in f tyS
   
-let applysubst constr tyT =
+let applySubst constr tyT =
   List.fold
     (fun tyS -> function | (TyId tyX, tyC2) -> substinty tyX tyC2 tyS | _ -> invalidArg "can't get here" "") tyT
     (List.rev constr)
@@ -145,7 +145,7 @@ let occursin tyX tyT =
     | TyId s -> s = tyX
   in o tyT
   
-let unify fi _ msg constr =
+let unify fi (_ : Context) msg constr =
   let rec u constr =
     match constr with
     | [] -> []

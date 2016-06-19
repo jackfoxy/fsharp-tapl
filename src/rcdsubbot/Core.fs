@@ -42,49 +42,49 @@ let rec eval1 ctx t =
   | TmProj (fi, t1, l) -> let t1' = eval1 ctx t1 in TmProj (fi, t1', l)
   | _ -> raise Common.NoRuleAppliesException
   
-let rec eval ctx t =
+let rec eval (ctx : Context) t =
   try let t' = eval1 ctx t in eval ctx t' with | Common.NoRuleAppliesException -> t
   
 (* ------------------------   SUBTYPING  ------------------------ *)
-let rec subtype tyS tyT =
+let rec subType tyS tyT =
   (tyS = tyT) ||
     (match (tyS, tyT) with
      | (_, TyTop) -> true
      | (TyBot, _) -> true
      | (TyArr (tyS1, tyS2), TyArr (tyT1, tyT2)) ->
-         (subtype tyT1 tyS1) && (subtype tyS2 tyT2)
+         (subType tyT1 tyS1) && (subType tyS2 tyT2)
      | (TyRecord fS, TyRecord fT) ->
          List.forall
            (fun (li, tyTi) ->
                 match List.assoc li fS with
-                | Some tySi -> subtype tySi tyTi
+                | Some tySi -> subType tySi tyTi
                 | None -> false)
            fT
      | (_) -> false)
   
 (* ------------------------   TYPING  ------------------------ *)
-let rec typeof ctx t =
+let rec typeOf ctx t =
   match t with
   | TmRecord (_, fields) ->
-      let fieldtys = List.map (fun (li, ti) -> (li, (typeof ctx ti))) fields
+      let fieldtys = List.map (fun (li, ti) -> (li, (typeOf ctx ti))) fields
       in TyRecord fieldtys
   | TmVar (fi, i, _) -> getTypeFromContext fi ctx i
   | TmAbs (_, x, tyT1, t2) ->
-      let ctx' = addbinding ctx x (VarBind tyT1) in
-      let tyT2 = typeof ctx' t2 in TyArr (tyT1, tyT2)
+      let ctx' = addBinding ctx x (VarBind tyT1) in
+      let tyT2 = typeOf ctx' t2 in TyArr (tyT1, tyT2)
   | TmApp (fi, t1, t2) ->
-      let tyT1 = typeof ctx t1 in
-      let tyT2 = typeof ctx t2
+      let tyT1 = typeOf ctx t1 in
+      let tyT2 = typeOf ctx t2
       in
         (match tyT1 with
          | TyArr (tyT11, tyT12) ->
-             if subtype tyT2 tyT11
+             if subType tyT2 tyT11
              then tyT12
              else error fi "parameter type mismatch"
          | TyBot -> TyBot
          | _ -> error fi "arrow type expected")
   | TmProj (fi, t1, l) ->
-      (match typeof ctx t1 with
+      (match typeOf ctx t1 with
        | TyRecord fieldtys ->
             match List.assoc l fieldtys with
             | Some x -> x

@@ -36,7 +36,7 @@ let rec isval ctx t =
   
 type Store = Term list
 
-let emptystore = []
+let emptyStore : Term list  = []
   
 let extendstore store v = ((List.length store), (List.append store [ v ]))
   
@@ -50,7 +50,7 @@ let updatestore store n v =
     | _ -> error dummyinfo "updatestore: bad index"
   in f (n, store)
   
-let shiftstore i store = List.map (fun t -> termShift i t) store
+let shiftStore i store = List.map (fun t -> termShift i t) store
   
 let rec eval1 ctx store t =
   match t with
@@ -111,7 +111,7 @@ let rec eval1 ctx store t =
       let (t1', store') = eval1 ctx store t1
       in ((TmAscribe (fi, t1', tyT)), store')
   | TmVar (fi, n, _) ->
-      (match getbinding fi ctx n with
+      (match getBinding fi ctx n with
        | TmAbbBind (t, _) -> (t, store)
        | _ -> raise Common.NoRuleAppliesException)
   | TmRef (fi, t1) ->
@@ -167,22 +167,22 @@ let rec eval1 ctx store t =
       in ((TmIsZero (fi, t1')), store')
   | _ -> raise Common.NoRuleAppliesException
   
-let rec eval ctx store t =
+let rec eval (ctx : Context) store t =
   try let (t', store') = eval1 ctx store t in eval ctx store' t'
   with | Common.NoRuleAppliesException -> (t, store)
   
 (* ------------------------   SUBTYPING  ------------------------ *)
-let evalbinding ctx store b =
+let evalBinding (ctx : Context) store b =
   match b with
   | TmAbbBind (t, tyT) ->
       let (t', store') = eval ctx store t in ((TmAbbBind (t', tyT)), store')
   | bind -> (bind, store)
   
 let istyabb ctx i =
-  match getbinding dummyinfo ctx i with | TyAbbBind _ -> true | _ -> false
+  match getBinding dummyinfo ctx i with | TyAbbBind _ -> true | _ -> false
   
 let gettyabb ctx i =
-  match getbinding dummyinfo ctx i with
+  match getBinding dummyinfo ctx i with
   | TyAbbBind tyT -> tyT
   | _ -> raise Common.NoRuleAppliesException
   
@@ -191,28 +191,28 @@ let rec computety ctx tyT =
   | TyVar (i, _) when istyabb ctx i -> gettyabb ctx i
   | _ -> raise Common.NoRuleAppliesException
   
-let rec simplifyty ctx tyT =
-  try let tyT' = computety ctx tyT in simplifyty ctx tyT'
+let rec simplifyTy ctx tyT =
+  try let tyT' = computety ctx tyT in simplifyTy ctx tyT'
   with | Common.NoRuleAppliesException -> tyT
   
-let rec tyeqv ctx tyS tyT =
-  let tyS = simplifyty ctx tyS in
-  let tyT = simplifyty ctx tyT
+let rec tyEqv ctx tyS tyT =
+  let tyS = simplifyTy ctx tyS in
+  let tyT = simplifyTy ctx tyT
   in
     match (tyS, tyT) with
     | (TyTop, TyTop) -> true
     | (TyBot, TyBot) -> true
     | (TyArr (tyS1, tyS2), TyArr (tyT1, tyT2)) ->
-        (tyeqv ctx tyS1 tyT1) && (tyeqv ctx tyS2 tyT2)
+        (tyEqv ctx tyS1 tyT1) && (tyEqv ctx tyS2 tyT2)
     | (TyString, TyString) -> true
     | (TyId b1, TyId b2) -> b1 = b2
     | (TyFloat, TyFloat) -> true
     | (TyUnit, TyUnit) -> true
-    | (TyRef tyT1, TyRef tyT2) -> tyeqv ctx tyT1 tyT2
-    | (TySource tyT1, TySource tyT2) -> tyeqv ctx tyT1 tyT2
-    | (TySink tyT1, TySink tyT2) -> tyeqv ctx tyT1 tyT2
-    | (TyVar (i, _), _) when istyabb ctx i -> tyeqv ctx (gettyabb ctx i) tyT
-    | (_, TyVar (i, _)) when istyabb ctx i -> tyeqv ctx tyS (gettyabb ctx i)
+    | (TyRef tyT1, TyRef tyT2) -> tyEqv ctx tyT1 tyT2
+    | (TySource tyT1, TySource tyT2) -> tyEqv ctx tyT1 tyT2
+    | (TySink tyT1, TySink tyT2) -> tyEqv ctx tyT1 tyT2
+    | (TyVar (i, _), _) when istyabb ctx i -> tyEqv ctx (gettyabb ctx i) tyT
+    | (_, TyVar (i, _)) when istyabb ctx i -> tyEqv ctx tyS (gettyabb ctx i)
     | (TyVar (i, _), TyVar (j, _)) -> i = j
     | (TyBool, TyBool) -> true
     | (TyNat, TyNat) -> true
@@ -221,58 +221,58 @@ let rec tyeqv ctx tyS tyT =
           (List.forall
              (fun (li2, tyTi2) ->
                 match List.assoc li2 fields1 with
-                | Some tyTi1 -> tyeqv ctx tyTi1 tyTi2
+                | Some tyTi1 -> tyEqv ctx tyTi1 tyTi2
                 | None -> false)
              fields2)
     | (TyVariant fields1, TyVariant fields2) ->
         ((List.length fields1) = (List.length fields2)) &&
           (List.forall2
              (fun (li1, tyTi1) (li2, tyTi2) ->
-                (li1 = li2) && (tyeqv ctx tyTi1 tyTi2))
+                (li1 = li2) && (tyEqv ctx tyTi1 tyTi2))
              fields1 fields2)
     | _ -> false
   
-let rec subtype ctx tyS tyT =
-  (tyeqv ctx tyS tyT) ||
-    (let tyS = simplifyty ctx tyS in
-     let tyT = simplifyty ctx tyT
+let rec subType (ctx : Context) tyS tyT =
+  (tyEqv ctx tyS tyT) ||
+    (let tyS = simplifyTy ctx tyS in
+     let tyT = simplifyTy ctx tyT
      in
        match (tyS, tyT) with
        | (_, TyTop) -> true
        | (TyBot, _) -> true
        | (TyArr (tyS1, tyS2), TyArr (tyT1, tyT2)) ->
-           (subtype ctx tyT1 tyS1) && (subtype ctx tyS2 tyT2)
+           (subType ctx tyT1 tyS1) && (subType ctx tyS2 tyT2)
        | (TyRecord fS, TyRecord fT) ->
            List.forall
              (fun (li, tyTi) ->
                 match List.assoc li fS with
-                | Some tySi -> subtype ctx tySi tyTi
+                | Some tySi -> subType ctx tySi tyTi
                 | None -> false)
              fT
        | (TyVariant fS, TyVariant fT) ->
            List.forall
              (fun (li, tySi) ->
                 match List.assoc li fT with
-                | Some tyTi -> subtype ctx tySi tyTi
+                | Some tyTi -> subType ctx tySi tyTi
                 | None -> false)
              fS
        | (TyRef tyT1, TyRef tyT2) ->
-           (subtype ctx tyT1 tyT2) && (subtype ctx tyT2 tyT1)
-       | (TyRef tyT1, TySource tyT2) -> subtype ctx tyT1 tyT2
-       | (TySource tyT1, TySource tyT2) -> subtype ctx tyT1 tyT2
-       | (TyRef tyT1, TySink tyT2) -> subtype ctx tyT2 tyT1
-       | (TySink tyT1, TySink tyT2) -> subtype ctx tyT2 tyT1
+           (subType ctx tyT1 tyT2) && (subType ctx tyT2 tyT1)
+       | (TyRef tyT1, TySource tyT2) -> subType ctx tyT1 tyT2
+       | (TySource tyT1, TySource tyT2) -> subType ctx tyT1 tyT2
+       | (TyRef tyT1, TySink tyT2) -> subType ctx tyT2 tyT1
+       | (TySink tyT1, TySink tyT2) -> subType ctx tyT2 tyT1
        | (_) -> false)
   
 let rec join ctx tyS tyT =
-  if subtype ctx tyS tyT
+  if subType ctx tyS tyT
   then tyT
   else
-    if subtype ctx tyT tyS
+    if subType ctx tyT tyS
     then tyS
     else
-      (let tyS = simplifyty ctx tyS in
-       let tyT = simplifyty ctx tyT
+      (let tyS = simplifyTy ctx tyS in
+       let tyT = simplifyTy ctx tyT
        in
          match (tyS, tyT) with
          | (TyRecord fS, TyRecord fT) ->
@@ -295,7 +295,7 @@ let rec join ctx tyS tyT =
          | (TyArr (tyS1, tyS2), TyArr (tyT1, tyT2)) ->
              TyArr (meet ctx tyS1 tyT1, join ctx tyS2 tyT2)
          | (TyRef tyT1, TyRef tyT2) ->
-             if (subtype ctx tyT1 tyT2) && (subtype ctx tyT2 tyT1)
+             if (subType ctx tyT1 tyT2) && (subType ctx tyT2 tyT1)
              then TyRef tyT1
              else (* Warning: this is incomplete... *)
                TySource (join ctx tyT1 tyT2)
@@ -307,14 +307,14 @@ let rec join ctx tyS tyT =
          | (TySink tyT1, TyRef tyT2) -> TySink (meet ctx tyT1 tyT2)
          | _ -> TyTop)
 and meet ctx tyS tyT =
-  if subtype ctx tyS tyT
+  if subType ctx tyS tyT
   then tyS
   else
-    if subtype ctx tyT tyS
+    if subType ctx tyT tyS
     then tyT
     else
-      (let tyS = simplifyty ctx tyS in
-       let tyT = simplifyty ctx tyT
+      (let tyS = simplifyTy ctx tyS in
+       let tyT = simplifyTy ctx tyT
        in
          match (tyS, tyT) with
          | (TyRecord fS, TyRecord fT) ->
@@ -349,7 +349,7 @@ and meet ctx tyS tyT =
          | (TyArr (tyS1, tyS2), TyArr (tyT1, tyT2)) ->
              TyArr (join ctx tyS1 tyT1, meet ctx tyS2 tyT2)
          | (TyRef tyT1, TyRef tyT2) ->
-             if (subtype ctx tyT1 tyT2) && (subtype ctx tyT2 tyT1)
+             if (subType ctx tyT1 tyT2) && (subType ctx tyT2 tyT1)
              then TyRef tyT1
              else (* Warning: this is incomplete... *)
                TySource (meet ctx tyT1 tyT2)
@@ -362,20 +362,20 @@ and meet ctx tyS tyT =
          | _ -> TyBot)
   
 (* ------------------------   TYPING  ------------------------ *)
-let rec typeof ctx t =
+let rec typeOf ctx t =
   match t with
   | TmInert (_, tyT) -> tyT
   | TmVar (fi, i, _) -> getTypeFromContext fi ctx i
   | TmAbs (_, x, tyT1, t2) ->
-      let ctx' = addbinding ctx x (VarBind tyT1) in
-      let tyT2 = typeof ctx' t2 in TyArr (tyT1, typeShift (-1) tyT2)
+      let ctx' = addBinding ctx x (VarBind tyT1) in
+      let tyT2 = typeOf ctx' t2 in TyArr (tyT1, typeShift (-1) tyT2)
   | TmApp (fi, t1, t2) ->
-      let tyT1 = typeof ctx t1 in
-      let tyT2 = typeof ctx t2
+      let tyT1 = typeOf ctx t1 in
+      let tyT2 = typeOf ctx t2
       in
-        (match simplifyty ctx tyT1 with
+        (match simplifyTy ctx tyT1 with
          | TyArr (tyT11, tyT12) ->
-             if subtype ctx tyT2 tyT11
+             if subType ctx tyT2 tyT11
              then tyT12
              else error fi "parameter type mismatch"
          | TyBot -> TyBot
@@ -383,18 +383,18 @@ let rec typeof ctx t =
   | TmTrue _ -> TyBool
   | TmFalse _ -> TyBool
   | TmIf (fi, t1, t2, t3) ->
-      if subtype ctx (typeof ctx t1) TyBool
-      then join ctx (typeof ctx t2) (typeof ctx t3)
+      if subType ctx (typeOf ctx t1) TyBool
+      then join ctx (typeOf ctx t2) (typeOf ctx t3)
       else error fi "guard of conditional not a boolean"
   | TmLet (_, x, t1, t2) ->
-      let tyT1 = typeof ctx t1 in
-      let ctx' = addbinding ctx x (VarBind tyT1)
-      in typeShift (-1) (typeof ctx' t2)
+      let tyT1 = typeOf ctx t1 in
+      let ctx' = addBinding ctx x (VarBind tyT1)
+      in typeShift (-1) (typeOf ctx' t2)
   | TmRecord (_, fields) ->
-      let fieldtys = List.map (fun (li, ti) -> (li, (typeof ctx ti))) fields
+      let fieldtys = List.map (fun (li, ti) -> (li, (typeOf ctx ti))) fields
       in TyRecord fieldtys
   | TmProj (fi, t1, l) ->
-      (match simplifyty ctx (typeof ctx t1) with
+      (match simplifyTy ctx (typeOf ctx t1) with
        | TyRecord fieldtys ->
             match List.assoc l fieldtys with
             | Some x -> x
@@ -402,7 +402,7 @@ let rec typeof ctx t =
        | TyBot -> TyBot
        | _ -> error fi "Expected record type")
   | TmCase (fi, t, cases) ->
-      (match simplifyty ctx (typeof ctx t) with
+      (match simplifyTy ctx (typeOf ctx t) with
        | TyVariant fieldtys ->
            (List.iter
               (fun (li, (_)) ->
@@ -415,83 +415,83 @@ let rec typeof ctx t =
                 (fun (li, (xi, ti)) ->
                     let ctx' =
                         match List.assoc li fieldtys with
-                        | Some tyTi -> addbinding ctx xi (VarBind tyTi)
+                        | Some tyTi -> addBinding ctx xi (VarBind tyTi)
                         | None -> error fi ("label " ^ (li ^ " not found"))
-                    in typeShift (-1) (typeof ctx' ti))
+                    in typeShift (-1) (typeOf ctx' ti))
                 cases
             in List.fold (join ctx) TyBot casetypes)
        | TyBot -> TyBot
        | _ -> error fi "Expected variant type")
   | TmFix (fi, t1) ->
-      let tyT1 = typeof ctx t1
+      let tyT1 = typeOf ctx t1
       in
-        (match simplifyty ctx tyT1 with
+        (match simplifyTy ctx tyT1 with
          | TyArr (tyT11, tyT12) ->
-             if subtype ctx tyT12 tyT11
+             if subType ctx tyT12 tyT11
              then tyT12
              else error fi "result of body not compatible with domain"
          | TyBot -> TyBot
          | _ -> error fi "arrow type expected")
   | TmTag (fi, li, ti, tyT) ->
-      (match simplifyty ctx tyT with
+      (match simplifyTy ctx tyT with
        | TyVariant fieldtys ->
            
             match List.assoc li fieldtys with
             | Some tyTiExpected  -> 
-                let tyTi = typeof ctx ti
+                let tyTi = typeOf ctx ti
 
-                if subtype ctx tyTi tyTiExpected
+                if subType ctx tyTi tyTiExpected
                 then tyT
                 else error fi "field does not have expected type"
             | None -> error fi ("label " ^ (li ^ " not found"))
        | _ -> error fi "Annotation is not a variant type")
   | TmAscribe (fi, t1, tyT) ->
-      if subtype ctx (typeof ctx t1) tyT
+      if subType ctx (typeOf ctx t1) tyT
       then tyT
       else error fi "body of as-term does not have the expected type"
   | TmString _ -> TyString
   | TmUnit _ -> TyUnit
-  | TmRef (_, t1) -> TyRef (typeof ctx t1)
+  | TmRef (_, t1) -> TyRef (typeOf ctx t1)
   | TmLoc (fi, _) ->
       error fi "locations are not supposed to occur in source programs!"
   | TmDeref (fi, t1) ->
-      (match simplifyty ctx (typeof ctx t1) with
+      (match simplifyTy ctx (typeOf ctx t1) with
        | TyRef tyT1 -> tyT1
        | TyBot -> TyBot
        | TySource tyT1 -> tyT1
        | _ -> error fi "argument of ! is not a Ref or Source")
   | TmAssign (fi, t1, t2) ->
-      (match simplifyty ctx (typeof ctx t1) with
+      (match simplifyTy ctx (typeOf ctx t1) with
        | TyRef tyT1 ->
-           if subtype ctx (typeof ctx t2) tyT1
+           if subType ctx (typeOf ctx t2) tyT1
            then TyUnit
            else error fi "arguments of := are incompatible"
        | TyBot -> 
-                typeof ctx t2 |> ignore
+                typeOf ctx t2 |> ignore
                 TyBot
        | TySink tyT1 ->
-           if subtype ctx (typeof ctx t2) tyT1
+           if subType ctx (typeOf ctx t2) tyT1
            then TyUnit
            else error fi "arguments of := are incompatible"
        | _ -> error fi "argument of ! is not a Ref or Sink")
   | TmFloat _ -> TyFloat
   | TmTimesfloat (fi, t1, t2) ->
       if
-        (subtype ctx (typeof ctx t1) TyFloat) &&
-          (subtype ctx (typeof ctx t2) TyFloat)
+        (subType ctx (typeOf ctx t1) TyFloat) &&
+          (subType ctx (typeOf ctx t2) TyFloat)
       then TyFloat
       else error fi "argument of timesfloat is not a number"
   | TmZero _ -> TyNat
   | TmSucc (fi, t1) ->
-      if subtype ctx (typeof ctx t1) TyNat
+      if subType ctx (typeOf ctx t1) TyNat
       then TyNat
       else error fi "argument of succ is not a number"
   | TmPred (fi, t1) ->
-      if subtype ctx (typeof ctx t1) TyNat
+      if subType ctx (typeOf ctx t1) TyNat
       then TyNat
       else error fi "argument of pred is not a number"
   | TmIsZero (fi, t1) ->
-      if subtype ctx (typeof ctx t1) TyNat
+      if subType ctx (typeOf ctx t1) TyNat
       then TyBool
       else error fi "argument of iszero is not a number"
   

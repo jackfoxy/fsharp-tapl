@@ -53,12 +53,12 @@ module FulluntypedLib =
             force_newline()
             ctx
         | Bind(_, x, bind) -> 
-            let bind' = evalbinding ctx bind
+            let bind' = evalBinding ctx bind
             pr x
             pr " "
-            prbinding ctx bind'
+            prBinding ctx bind'
             force_newline()
-            addbinding ctx x bind'
+            addBinding ctx x bind'
     
     let processInput parsedCommand input ctx = 
         setOutput parsedCommand

@@ -1,6 +1,11 @@
+# Generated lex and parse files
 src/*/Lexer.fs
 src/*/Parser.fs
 src/*/Parser.fsi
+
+# Lambda Calc source files
+*.src
+
 AssemblyInfo.fs
 
 # Generated documentation folder

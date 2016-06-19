@@ -50,28 +50,28 @@ module ReconLib =
         | NameBind -> ()
         | VarBind tyT -> 
             pr ": "
-            printty tyT
+            printTy tyT
     
     let rec processCommand (ctx, nextuvar, constr) cmd = 
         match cmd with
         | Eval(fi, t) -> 
             let (tyT, nextuvar', constr_t) = recon ctx nextuvar t
             let t' = eval ctx t
-            let constr' = combineconstr constr constr_t
+            let constr' = combineConstr constr constr_t
             let constr'' = unify fi ctx "Could not simplify constraints" constr'
-            printtmATerm true ctx t'
+            printTerm true ctx t'
             print_break 1 2
             pr ": "
             open_hovbox 0
-            printty (applysubst constr'' tyT)
+            printTy (applySubst constr'' tyT)
             force_newline()
             (ctx, nextuvar', constr'')
         | Bind(_, x, bind) -> 
             pr x
             pr " "
-            prbinding ctx bind
+            prBinding ctx bind
             force_newline()
-            ((addbinding ctx x bind), uvargen, constr)
+            ((addBinding ctx x bind), uvargen, constr)
     
     let processInput parsedCommand input (ctx, nextuvar, constr) = 
         setOutput parsedCommand
