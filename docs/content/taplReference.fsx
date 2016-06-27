@@ -47,6 +47,10 @@ simplebool
 
 fullsimple
 
+letexcercise
+
+> Clauses for ```TmLet``` are missing from the ```eval1``` and ```typeOf``` functions as an exercise for the student.
+
 ## 12 Normalization ##
 
 ## 13 References ##
