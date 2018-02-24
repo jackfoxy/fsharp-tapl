@@ -18,6 +18,7 @@ docs/output/
 #Visual Studio files
 *.[Oo]bj
 *.exe
+!paket.exe
 *.pdb
 *.user
 *.aps
@@ -68,7 +69,6 @@ _ReSharper*/
 localpackages/
 paket-files
 *.orig
-.paket/paket.exe
 docs/content/license.md
 docs/content/release-notes.md
 .fake
